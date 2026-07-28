@@ -13,17 +13,22 @@ const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0)
 const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
 const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor" : "attention");
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
+type Section = "overview" | "trials" | "calls" | "membership";
 
-export default function CenterDetail({ centerId }: { centerId: string }) {
+export default function CenterDetail({ centerId, section }: { centerId: string; section: Section }) {
   const [dayFilter, setDayFilter] = useState("All days");
   const [sort, setSort] = useState("day");
   const selected = reports.find((report) => report.id === centerId) ?? reports[0];
   const selectedCalls = callData.find((item) => item.center === selected.center) ?? callData[0];
-  const people = callPersonData.filter((item) => item.center === selected.center);
+  const people = callPersonData.filter((item) => item.center === selected.center && item.totalMinutes > 0);
   const teamTrials = teamTrialData.filter((item) => item.center === selected.center);
   const membership = membershipData.find((item) => item.center === selected.center);
   const namedMinutes = people.reduce((sum, item) => sum + item.totalMinutes, 0);
   const sharedMinutes = Math.max(0, selectedCalls.totalMinutes - namedMinutes);
+  const callGoalPct = pct(selectedCalls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
+  const signupGoalPct = membership ? pct(membership.signups.current, membership.signups.goal) : 0;
+  const expectedSignups = membership ? membership.signups.goal * (27 / 31) : 0;
+  const paceLabel = membership ? (membership.signups.current >= expectedSignups - 1 ? "On pace" : "Behind pace") : "";
 
   const classRows = useMemo(() => {
     const rows = selected.classes.filter((row) => dayFilter === "All days" || row.day === dayFilter);
@@ -35,162 +40,111 @@ export default function CenterDetail({ centerId }: { centerId: string }) {
     });
   }, [selected, dayFilter, sort]);
 
+  const sectionTitle = section === "overview" ? "CENTER OVERVIEW" : `${section.toUpperCase()} PERFORMANCE`;
+
   return (
     <main className="detail-page">
       <header className="navy-header">
-        <Link href="/" className="wordmark">
-          <span className="shield">K</span>
-          <div><strong>KIDSTRONG</strong><small>REGIONAL PERFORMANCE</small></div>
-        </Link>
-        <div className="header-title"><span>CENTER PERFORMANCE</span><strong>{selected.center.toUpperCase()}</strong></div>
+        <Link href="/" className="wordmark"><span className="shield">K</span><div><strong>KIDSTRONG</strong><small>REGIONAL PERFORMANCE</small></div></Link>
+        <div className="header-title"><span>{sectionTitle}</span><strong>{selected.center.toUpperCase()}</strong></div>
         <div className="date-lockup"><span className="calendar-icon">27</span><div><small>REPORTING WINDOW</small><strong>July 1 – July 27</strong></div></div>
       </header>
 
       <div className="page-shell">
         <nav className="detail-nav" aria-label="Center navigation">
           <Link href="/">← All centers</Link>
-          <div>{reports.map((report) => <Link className={report.id === centerId ? "active" : ""} href={`/centers/${report.id}`} key={report.id}>{report.center}</Link>)}</div>
+          <div className="section-tabs">
+            <Link className={section === "overview" ? "active" : ""} href={`/centers/${centerId}`}>Overview</Link>
+            <Link className={section === "trials" ? "active" : ""} href={`/centers/${centerId}/trials`}>Trials</Link>
+            <Link className={section === "calls" ? "active" : ""} href={`/centers/${centerId}/calls`}>Calls</Link>
+            <Link className={section === "membership" ? "active" : ""} href={`/centers/${centerId}/membership`}>Membership</Link>
+          </div>
         </nav>
 
         <section className="detail-hero">
-          <div><p className="kicker">JULY 2026 CENTER REPORT</p><h1>{selected.center}</h1><p>{selected.dateRange} · Trial and call performance</p></div>
-          <div className="detail-call-progress"><small>MONTHLY CALL-TIME GOAL</small><strong>{pct(selectedCalls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL).toFixed(1)}%</strong><span>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} of 3,000 minutes</span><i><b style={{ width: `${Math.min(pct(selectedCalls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL), 100)}%` }} /></i></div>
+          <div><p className="kicker">JULY 2026 · {sectionTitle}</p><h1>{selected.center}</h1><p>{selected.dateRange}</p></div>
+          <div className="center-switcher">{reports.map((report) => <Link className={report.id === centerId ? "active" : ""} href={`/centers/${report.id}${section === "overview" ? "" : `/${section}`}`} key={report.id}>{report.center}</Link>)}</div>
         </section>
 
-        <section className="kpi-grid">
-          <article><span className="metric-icon blue">S</span><div><small>TRIALS SCHEDULED</small><strong>{selected.scheduled}</strong><p>100% of total</p></div></article>
-          <article><span className="metric-icon green">SH</span><div><small>TRIALS SHOWED</small><strong>{selected.showed}</strong><p>{rate(selected.showed, selected.scheduled)} show rate</p></div></article>
-          <article><span className="metric-icon navy">C</span><div><small>TRIALS CLOSED</small><strong>{selected.closed}</strong><p>{rate(selected.closed, selected.showed)} close rate</p></div></article>
-          <article><span className="metric-icon black">NS</span><div><small>NO SHOWS</small><strong>{selected.scheduled - selected.showed}</strong><p>{rate(selected.scheduled - selected.showed, selected.scheduled)} no-show rate</p></div></article>
-        </section>
-
-        {teamTrials.length > 0 && (
-          <section className="panel team-trial-panel">
-            <div className="panel-bar team-trial-bar">
-              <div><h3>SHOW &amp; CLOSE RATES BY PERSON</h3><span>Voorhees team attribution</span></div>
-              <strong>{teamTrials.reduce((sum, item) => sum + item.closed, 0)} total closes</strong>
-            </div>
-            <div className="team-trial-grid">
-              {teamTrials.map((person) => (
-                <article className="team-trial-card" key={person.person}>
-                  <div className="team-trial-name"><strong>{person.person}</strong><span>{person.booked} booked · {person.closed} closed</span></div>
-                  <div className="team-rate-pair">
-                    <div>
-                      <small>SHOW RATE</small>
-                      <strong>{person.showRate === null ? "—" : `${person.showRate}%`}</strong>
-                      <i><b style={{ width: `${person.showRate ?? 0}%` }} /></i>
-                    </div>
-                    <div>
-                      <small>CLOSE RATE</small>
-                      <strong>{person.closeRate === null ? "—" : `${person.closeRate}%`}</strong>
-                      <i><b style={{ width: `${person.closeRate ?? 0}%` }} /></i>
-                    </div>
-                  </div>
-                  {person.showRate === null && <p>No attributed trials</p>}
-                </article>
-              ))}
-            </div>
+        {section === "overview" && <>
+          <section className="overview-primary-kpis">
+            <article><small>CENTER SHOW RATE</small><strong>{rate(selected.showed, selected.scheduled)}</strong><span>{selected.showed} of {selected.scheduled} trials showed</span></article>
+            <article><small>CENTER CLOSE RATE</small><strong>{rate(selected.closed, selected.showed)}</strong><span>{selected.closed} of {selected.showed} shown trials closed</span></article>
           </section>
-        )}
 
-        {membership && (
-          <section className="panel membership-panel">
-            <div className="panel-bar membership-bar">
-              <div><h3>MEMBERSHIP HEALTH</h3><span>Beginning-of-month APM, holds, drops, and growth</span></div>
-              <div className="membership-apm"><small>BOM ACTIVE PAYING MEMBERS</small><strong>{membership.bomApm}</strong></div>
-            </div>
-            <div className="membership-grid">
-              <article className="membership-card signup-card">
-                <small>MONTHLY SIGN-UP GOAL</small>
-                <div className="membership-main-value"><strong>{membership.signups.current}</strong><span>of {membership.signups.goal}</span><em>{pct(membership.signups.current, membership.signups.goal).toFixed(1)}%</em></div>
-                <i><b style={{ width: `${Math.min(pct(membership.signups.current, membership.signups.goal), 100)}%` }} /></i>
-                <p>{Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining</p>
-              </article>
-              <article className="membership-card">
-                <small>HOLDS</small><div className="membership-main-value"><strong>{membership.holds.total}</strong></div>
-                <div className="membership-subgrid">
-                  <div><span>Scheduled</span><b>{membership.holds.scheduled ?? "—"}</b></div>
-                  <div><span>Lifting</span><b>{membership.holds.lifting}</b></div>
-                  <div><span>Starting</span><b>{membership.holds.starting ?? "—"}</b></div>
-                </div>
-              </article>
-              <article className="membership-card">
-                <small>DROPS</small><div className="membership-main-value"><strong>{membership.drops.total}</strong><span>total</span></div>
-                <div className="drop-status"><strong>{membership.drops.pending}</strong><span>pending drops left to fall off</span></div>
-              </article>
-              <article className="membership-card past-due-card">
-                <small>PAST-DUE MEMBERSHIPS</small><div className="membership-main-value"><strong>{membership.pastDue}</strong></div>
-                <p>members currently in past-due status</p>
-              </article>
-            </div>
-            {(membership.holds.scheduled === null || membership.holds.starting === null) && <p className="membership-footnote">Scheduled and starting hold counts are awaiting the next data update.</p>}
+          <section className="center-section-cards">
+            <Link href={`/centers/${centerId}/trials`} className="center-section-card">
+              <div><small>TRIALS</small><strong>{selected.scheduled} scheduled</strong><span>{selected.closed} closed</span></div><b>View trial details →</b>
+            </Link>
+            <Link href={`/centers/${centerId}/calls`} className="center-section-card">
+              <div><small>CALLS</small><strong>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} minutes</strong><span>{callGoalPct.toFixed(1)}% of 3,000-minute goal</span></div><i><em style={{ width: `${Math.min(callGoalPct, 100)}%` }} /></i><b>View call details →</b>
+            </Link>
+            <Link href={`/centers/${centerId}/membership`} className={`center-section-card ${!membership ? "unavailable" : ""}`}>
+              <div><small>MEMBERSHIP</small><strong>{membership ? `${membership.signups.current} of ${membership.signups.goal} sign-ups` : "Data coming soon"}</strong><span>{membership ? `${signupGoalPct.toFixed(1)}% of monthly goal · ${paceLabel}` : "Membership health has not been added yet"}</span></div>{membership && <i><em style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i>}<b>{membership ? "View membership details →" : "Awaiting data"}</b>
+            </Link>
           </section>
-        )}
 
-        <section className="call-detail-strip">
-          <div><small>TOTAL CALL TIME</small><strong>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</strong><span>{selectedCalls.totalHours.toFixed(1)} hours</span></div>
-          <div><small>AVERAGE CALL LENGTH</small><strong>{selectedCalls.avgMinutes.toFixed(2)} min</strong><span>across {selectedCalls.totalCalls.toLocaleString()} calls</span></div>
-          <div><small>OUTBOUND EFFORT</small><strong>{selectedCalls.outboundCalls.toLocaleString()}</strong><span>{pct(selectedCalls.outboundCalls, selectedCalls.totalCalls).toFixed(1)}% of calls</span></div>
-          <div><small>FOLLOW-UP SIGNALS</small><strong>{(selectedCalls.missedCalls + selectedCalls.voicemails).toLocaleString()}</strong><span>{selectedCalls.missedCalls} missed · {selectedCalls.voicemails} voicemail</span></div>
-        </section>
+          <DayPerformance selected={selected} />
+          <section className="insights-grid">
+            <article className="insight success"><span>★</span><div><small>WHAT&apos;S WORKING</small><strong>{selected.strongest}</strong></div></article>
+            <article className="insight risk"><span>!</span><div><small>GREATEST OPPORTUNITY</small><strong>{selected.opportunity}</strong></div></article>
+            <article className="insight focus"><span>◎</span><div><small>GOLD STANDARD</small><strong>{selected.goldStandard}</strong></div></article>
+          </section>
+        </>}
 
-        <section className="panel people-call-panel">
-          <div className="panel-bar people-call-bar">
-            <div><h3>TEAM CALL ACTIVITY</h3><span>Ranked by total call minutes</span></div>
-            <div className="shared-call-note"><strong>{sharedMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</strong><span>shared / unassigned inbound time</span></div>
+        {section === "trials" && <>
+          <section className="kpi-grid">
+            <article><span className="metric-icon blue">S</span><div><small>TRIALS SCHEDULED</small><strong>{selected.scheduled}</strong><p>100% of total</p></div></article>
+            <article><span className="metric-icon green">SH</span><div><small>TRIALS SHOWED</small><strong>{selected.showed}</strong><p>{rate(selected.showed, selected.scheduled)} show rate</p></div></article>
+            <article><span className="metric-icon navy">C</span><div><small>TRIALS CLOSED</small><strong>{selected.closed}</strong><p>{rate(selected.closed, selected.showed)} close rate</p></div></article>
+            <article><span className="metric-icon black">NS</span><div><small>NO SHOWS</small><strong>{selected.scheduled - selected.showed}</strong><p>{rate(selected.scheduled - selected.showed, selected.scheduled)} no-show rate</p></div></article>
+          </section>
+          {teamTrials.length > 0 && <section className="panel team-trial-panel">
+            <div className="panel-bar team-trial-bar"><div><h3>SHOW &amp; CLOSE RATES BY PERSON</h3><span>Team attribution</span></div><strong>{teamTrials.reduce((sum, item) => sum + item.closed, 0)} total closes</strong></div>
+            <div className="team-trial-grid">{teamTrials.map((person) => <article className="team-trial-card" key={person.person}><div className="team-trial-name"><strong>{person.person}</strong><span>{person.booked} booked · {person.closed} closed</span></div><div className="team-rate-pair"><div><small>SHOW RATE</small><strong>{person.showRate === null ? "—" : `${person.showRate}%`}</strong><i><b style={{ width: `${person.showRate ?? 0}%` }} /></i></div><div><small>CLOSE RATE</small><strong>{person.closeRate === null ? "—" : `${person.closeRate}%`}</strong><i><b style={{ width: `${person.closeRate ?? 0}%` }} /></i></div></div></article>)}</div>
+          </section>}
+          <section className="panel class-panel">
+            <div className="panel-bar class-bar"><div><h3>DAILY CLASS PERFORMANCE DETAILS</h3><span>{classRows.length} class windows shown</span></div><div className="table-controls"><select value={dayFilter} onChange={(e) => setDayFilter(e.target.value)}><option>All days</option>{days.map((day) => <option key={day}>{day}</option>)}</select><select value={sort} onChange={(e) => setSort(e.target.value)}><option value="day">Sort: schedule</option><option value="volume">Sort: volume</option><option value="show">Sort: show rate</option><option value="close">Sort: close rate</option></select></div></div>
+            <div className="class-table-wrap"><table><thead><tr><th>Day</th><th>Class time</th><th>Scheduled</th><th>Showed</th><th>Closed</th><th>Show %</th><th>Close %</th></tr></thead><tbody>{classRows.map((row) => <tr key={`${row.day}-${row.time}`}><td><strong>{row.day}</strong></td><td>{row.time}</td><td>{row.scheduled}</td><td>{row.showed}</td><td>{row.closed}</td><td><span className={`rate-chip ${tone(pct(row.showed, row.scheduled))}`}>{rate(row.showed, row.scheduled)}</span></td><td><span className={`rate-chip ${tone(pct(row.closed, row.showed))}`}>{row.showed ? rate(row.closed, row.showed) : "—"}</span></td></tr>)}</tbody></table></div>
+          </section>
+        </>}
+
+        {section === "calls" && <>
+          <section className="call-goal-hero"><div><small>MONTHLY CALL-TIME GOAL</small><strong>{callGoalPct.toFixed(1)}%</strong><span>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} of 3,000 minutes · {Math.max(0, MONTHLY_CALL_MINUTE_GOAL - selectedCalls.totalMinutes).toLocaleString(undefined, { maximumFractionDigits: 0 })} remaining</span></div><i><b style={{ width: `${Math.min(callGoalPct, 100)}%` }} /></i></section>
+          <section className="call-detail-strip">
+            <div><small>TOTAL CALL TIME</small><strong>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</strong><span>{selectedCalls.totalHours.toFixed(1)} hours</span></div>
+            <div><small>AVERAGE CALL LENGTH</small><strong>{selectedCalls.avgMinutes.toFixed(2)} min</strong><span>across {selectedCalls.totalCalls.toLocaleString()} calls</span></div>
+            <div><small>OUTBOUND EFFORT</small><strong>{selectedCalls.outboundCalls.toLocaleString()}</strong><span>{pct(selectedCalls.outboundCalls, selectedCalls.totalCalls).toFixed(1)}% of calls</span></div>
+            <div><small>FOLLOW-UP SIGNALS</small><strong>{selectedCalls.missedCalls + selectedCalls.voicemails}</strong><span>{selectedCalls.missedCalls} missed · {selectedCalls.voicemails} voicemail</span></div>
+          </section>
+          <section className="panel people-call-panel">
+            <div className="panel-bar people-call-bar"><div><h3>TEAM CALL ACTIVITY</h3><span>People with recorded call time · ranked by minutes</span></div><div className="shared-call-note"><strong>{sharedMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</strong><span>shared / unassigned inbound time</span></div></div>
+            <div className="people-call-head"><span>Team member</span><span>Call time</span><span>Center share</span><span>Total calls</span><span>Inbound</span><span>Outbound</span><span>Avg. length</span></div>
+            <div className="people-call-list">{people.map((person, index) => { const share = pct(person.totalMinutes, selectedCalls.totalMinutes); return <div className="people-call-row" key={person.person}><div className="person-name"><b>{index + 1}</b><strong>{person.person}</strong></div><div className="person-call-time"><strong>{person.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</strong><span>{(person.totalMinutes / 60).toFixed(1)} hrs</span></div><div className="person-share"><strong>{share.toFixed(1)}%</strong><i><b style={{ width: `${Math.min(share, 100)}%` }} /></i></div><span>{person.totalCalls.toLocaleString()}</span><span>{person.inboundCalls.toLocaleString()}</span><span>{person.outboundCalls.toLocaleString()}</span><span>{person.avgMinutes.toFixed(2)} min</span></div>; })}</div>
+          </section>
+        </>}
+
+        {section === "membership" && membership && <section className="panel membership-panel">
+          <div className="panel-bar membership-bar"><div><h3>MEMBERSHIP HEALTH</h3><span>Growth, retention, and account health</span></div><div className="membership-apm"><small>BOM ACTIVE PAYING MEMBERS</small><strong>{membership.bomApm}</strong></div></div>
+          <div className="membership-pace"><div><small>MONTHLY SIGN-UP PACE</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected by July 27</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
+          <div className="membership-grid">
+            <article className="membership-card"><small>HOLDS</small><div className="membership-main-value"><strong>{membership.holds.total}</strong></div><div className="membership-subgrid"><div><span>Scheduled</span><b>{membership.holds.scheduled ?? "—"}</b></div><div><span>Lifting</span><b>{membership.holds.lifting}</b></div><div><span>Starting</span><b>{membership.holds.starting ?? "—"}</b></div></div></article>
+            <article className="membership-card"><small>DROPS</small><div className="membership-main-value"><strong>{membership.drops.total}</strong><span>total</span></div><div className="drop-status"><strong>{membership.drops.pending}</strong><span>pending drops left to fall off</span></div></article>
+            <article className="membership-card past-due-card"><small>PAST-DUE MEMBERSHIPS</small><div className="membership-main-value"><strong>{membership.pastDue}</strong></div><p>members currently in past-due status</p></article>
           </div>
-          <div className="people-call-head">
-            <span>Team member</span><span>Call time</span><span>Center share</span><span>Total calls</span><span>Inbound</span><span>Outbound</span><span>Avg. length</span>
-          </div>
-          <div className="people-call-list">
-            {people.map((person, index) => {
-              const centerShare = pct(person.totalMinutes, selectedCalls.totalMinutes);
-              return (
-                <div className="people-call-row" key={person.person}>
-                  <div className="person-name"><b>{index + 1}</b><strong>{person.person}</strong></div>
-                  <div className="person-call-time"><strong>{person.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</strong><span>{(person.totalMinutes / 60).toFixed(1)} hrs</span></div>
-                  <div className="person-share"><strong>{centerShare.toFixed(1)}%</strong><i><b style={{ width: `${Math.min(centerShare, 100)}%` }} /></i></div>
-                  <span>{person.totalCalls.toLocaleString()}</span>
-                  <span>{person.inboundCalls.toLocaleString()}</span>
-                  <span>{person.outboundCalls.toLocaleString()}</span>
-                  <span>{person.avgMinutes.toFixed(2)} min</span>
-                </div>
-              );
-            })}
-          </div>
-          <p className="people-call-footnote">Missed calls and voicemails are reported at the center level and are not assigned to individual users in the source report.</p>
-        </section>
-
-        <section className="analysis-grid">
-          <article className="panel day-table-panel">
-            <div className="panel-bar"><h3>TRIAL PERFORMANCE BY DAY</h3><span>{selected.center}</span></div>
-            <div className="day-table">
-              <div className="day-table-head"><span>Day</span><span>Sched</span><span>Showed</span><span>Closed</span><span>Show %</span><span>Close %</span></div>
-              {selected.days.map((row) => <div className="day-table-row" key={row.day}><strong>{row.day}</strong><span>{row.scheduled}</span><span>{row.showed}</span><span>{row.closed}</span><span className={tone(pct(row.showed, row.scheduled))}>{rate(row.showed, row.scheduled)}</span><span className={tone(pct(row.closed, row.showed))}>{rate(row.closed, row.showed)}</span></div>)}
-            </div>
-          </article>
-          <article className="panel chart-panel">
-            <div className="panel-bar"><h3>RATES BY DAY</h3><span>Show / Close</span></div>
-            <div className="legend"><span><i className="show-key" /> Show rate</span><span><i className="close-key" /> Close rate</span></div>
-            <div className="grouped-chart">
-              {selected.days.map((row) => <div className="chart-group" key={row.day}><div className="bars"><span className="show-bar" style={{ height: `${pct(row.showed, row.scheduled)}%` }} /><span className="close-bar" style={{ height: `${pct(row.closed, row.showed)}%` }} /></div><small>{row.day.slice(0, 3).toUpperCase()}</small></div>)}
-            </div>
-          </article>
-        </section>
-
-        <section className="insights-grid">
-          <article className="insight success"><span>★</span><div><small>WHAT&apos;S WORKING</small><strong>{selected.strongest}</strong></div></article>
-          <article className="insight risk"><span>!</span><div><small>GREATEST OPPORTUNITY</small><strong>{selected.opportunity}</strong></div></article>
-          <article className="insight focus"><span>◎</span><div><small>GOLD STANDARD</small><strong>{selected.goldStandard}</strong></div></article>
-        </section>
-
-        <section className="panel class-panel">
-          <div className="panel-bar class-bar"><div><h3>DAILY CLASS PERFORMANCE DETAILS</h3><span>{classRows.length} class windows shown</span></div><div className="table-controls"><select value={dayFilter} onChange={(event) => setDayFilter(event.target.value)} aria-label="Filter class details by day"><option>All days</option>{days.map((day) => <option key={day}>{day}</option>)}</select><select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Sort class details"><option value="day">Sort: schedule</option><option value="volume">Sort: volume</option><option value="show">Sort: show rate</option><option value="close">Sort: close rate</option></select></div></div>
-          <div className="class-table-wrap"><table><thead><tr><th>Day</th><th>Class time</th><th>Scheduled</th><th>Showed</th><th>Closed</th><th>Show %</th><th>Close %</th></tr></thead><tbody>{classRows.map((row) => <tr key={`${row.day}-${row.time}`}><td><strong>{row.day}</strong></td><td>{row.time}</td><td>{row.scheduled}</td><td>{row.showed}</td><td>{row.closed}</td><td><span className={`rate-chip ${tone(pct(row.showed, row.scheduled))}`}>{rate(row.showed, row.scheduled)}</span></td><td><span className={`rate-chip ${tone(pct(row.closed, row.showed))}`}>{row.showed ? rate(row.closed, row.showed) : "—"}</span></td></tr>)}</tbody></table></div>
-        </section>
+          {(membership.holds.scheduled === null || membership.holds.starting === null) && <p className="membership-footnote">Scheduled and starting hold counts are awaiting the next data update.</p>}
+        </section>}
+        {section === "membership" && !membership && <section className="empty-state"><strong>Membership data is coming soon.</strong><span>This center will populate when its membership report is added.</span></section>}
 
         <footer>Sources: July Trial Performance Report and Calls by Softphone User <span>Dashboard updated July 28, 2026</span></footer>
       </div>
     </main>
   );
+}
+
+function DayPerformance({ selected }: { selected: (typeof reports)[number] }) {
+  return <section className="analysis-grid overview-day-performance">
+    <article className="panel day-table-panel"><div className="panel-bar"><h3>TRIAL PERFORMANCE BY DAY</h3><span>{selected.center}</span></div><div className="day-table"><div className="day-table-head"><span>Day</span><span>Sched</span><span>Showed</span><span>Closed</span><span>Show %</span><span>Close %</span></div>{selected.days.map((row) => <div className="day-table-row" key={row.day}><strong>{row.day}</strong><span>{row.scheduled}</span><span>{row.showed}</span><span>{row.closed}</span><span className={tone(pct(row.showed, row.scheduled))}>{rate(row.showed, row.scheduled)}</span><span className={tone(pct(row.closed, row.showed))}>{rate(row.closed, row.showed)}</span></div>)}</div></article>
+    <article className="panel chart-panel"><div className="panel-bar"><h3>RATES BY DAY</h3><span>Show / Close</span></div><div className="legend"><span><i className="show-key" /> Show rate</span><span><i className="close-key" /> Close rate</span></div><div className="grouped-chart">{selected.days.map((row) => <div className="chart-group" key={row.day}><div className="bars"><span className="show-bar" style={{ height: `${pct(row.showed, row.scheduled)}%` }} /><span className="close-bar" style={{ height: `${pct(row.closed, row.showed)}%` }} /></div><small>{row.day.slice(0, 3).toUpperCase()}</small></div>)}</div></article>
+  </section>;
 }

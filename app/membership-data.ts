@@ -24,7 +24,7 @@ export const membershipData: CenterMembership[] = [
     bomApm: 407,
     holds: { total: 67, scheduled: null, lifting: 0, starting: null },
     drops: { total: 34, pending: 7 },
-    signups: { goal: 51, current: 41 },
+    signups: { goal: 51, current: 44 },
     pastDue: 19,
   },
 ];
