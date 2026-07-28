@@ -32,8 +32,8 @@ export const reports: CenterReport[] = [
   {
     id: "brick",
     center: "Brick",
-    month: "July 2025",
-    dateRange: "July 1 - July 27, 2025",
+    month: "July 2026",
+    dateRange: "July 1 - July 27, 2026",
     scheduled: 115,
     showed: 80,
     closed: 29,
@@ -123,8 +123,8 @@ export const reports: CenterReport[] = [
   {
     id: "voorhees",
     center: "Voorhees",
-    month: "July 2025",
-    dateRange: "July 1 - July 27, 2025",
+    month: "July 2026",
+    dateRange: "July 1 - July 27, 2026",
     scheduled: 105,
     showed: 69,
     closed: 36,
@@ -166,8 +166,8 @@ export const reports: CenterReport[] = [
   {
     id: "turnersville",
     center: "Turnersville",
-    month: "July 2025",
-    dateRange: "July 1 - July 27, 2025",
+    month: "July 2026",
+    dateRange: "July 1 - July 27, 2026",
     scheduled: 71,
     showed: 50,
     closed: 28,
