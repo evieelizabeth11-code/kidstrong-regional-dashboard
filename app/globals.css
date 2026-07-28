@@ -113,6 +113,8 @@ h1 { margin:0; font-size:clamp(34px,4vw,58px); line-height:1; letter-spacing:-.0
 .membership-subgrid div { background:#071d4b;border-radius:7px;padding:9px;text-align:center; }
 .membership-subgrid span { display:block;color:#91a4ca;font-size:7px;text-transform:uppercase; }
 .membership-subgrid b { display:block;color:var(--green);font-size:18px;margin-top:5px; }
+.membership-subgrid.hold-movement { grid-template-columns:1fr 1fr; }
+.hold-movement div:first-child b { color:var(--yellow); }
 .drop-status { display:flex;align-items:center;gap:9px;margin-top:18px;padding:11px;background:#071d4b;border-radius:7px; }
 .drop-status strong { color:var(--yellow);font-size:22px; }
 .drop-status span { color:#b8c8e8;font-size:8px;line-height:1.3; }

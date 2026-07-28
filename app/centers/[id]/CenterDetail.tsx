@@ -159,11 +159,11 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             </article>
           </div>
           <div className="membership-grid">
-            <article className="membership-card"><small>HOLDS</small><div className="membership-main-value"><strong>{membership.holds.total}</strong></div><div className="membership-subgrid"><div><span>Scheduled</span><b>{membership.holds.scheduled ?? "—"}</b></div><div><span>Lifting</span><b>{membership.holds.lifting}</b></div><div><span>Starting</span><b>{membership.holds.starting ?? "—"}</b></div></div></article>
+            <article className="membership-card hold-card"><small>CURRENT MEMBERSHIPS ON HOLD</small><div className="membership-main-value"><strong>{membership.holds.total}</strong></div><div className="membership-subgrid hold-movement"><div><span>Starting before EOM</span><b>{membership.holds.starting ?? "—"}</b></div><div><span>Lifting before EOM</span><b>{membership.holds.lifting}</b></div></div></article>
             <article className="membership-card"><small>DROPS</small><div className="membership-main-value"><strong>{membership.drops.total}</strong><span>total</span></div><div className="drop-status"><strong>{membership.drops.pending}</strong><span>pending drops left to fall off</span></div></article>
             <article className="membership-card past-due-card"><small>PAST-DUE MEMBERSHIPS</small><div className="membership-main-value"><strong>{membership.pastDue}</strong></div><p>members currently in past-due status</p></article>
           </div>
-          {(membership.holds.scheduled === null || membership.holds.starting === null) && <p className="membership-footnote">Scheduled and starting hold counts are awaiting the next data update.</p>}
+          {membership.holds.starting === null && <p className="membership-footnote">The number of holds starting before month-end is awaiting the next data update.</p>}
         </section>}
         {section === "membership" && !membership && <section className="empty-state"><strong>Membership data is coming soon.</strong><span>This center will populate when its membership report is added.</span></section>}
 
