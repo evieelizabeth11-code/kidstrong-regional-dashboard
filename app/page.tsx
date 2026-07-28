@@ -1,273 +1,187 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import reportData from "./class-data.json";
+import { reports } from "./trial-data";
 
-type ClassRow = {
-  source: string;
-  program: string;
-  className: string;
-  day: string;
-  time: string;
-  registrations: number;
-  firstDate: string;
-};
-
-const classes = reportData.classes as ClassRow[];
-const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
-function shortTime(time: string) {
-  return time.replace(/^0/, "").replace(":00", "");
-}
+const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
+const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
+const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor" : "attention");
 
 export default function Home() {
-  const [source, setSource] = useState("All reports");
-  const [day, setDay] = useState("All days");
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState("schedule");
+  const [centerId, setCenterId] = useState(reports[0].id);
+  const [dayFilter, setDayFilter] = useState("All days");
+  const [sort, setSort] = useState("day");
+  const selected = reports.find((report) => report.id === centerId) ?? reports[0];
 
-  const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const rows = classes.filter(
-      (item) =>
-        (source === "All reports" || item.source === source) &&
-        (day === "All days" || item.day === day) &&
-        (!normalizedQuery ||
-          item.className.toLowerCase().includes(normalizedQuery) ||
-          item.program.toLowerCase().includes(normalizedQuery)),
-    );
-
-    return [...rows].sort((a, b) => {
-      if (sort === "largest") return b.registrations - a.registrations;
-      if (sort === "smallest") return a.registrations - b.registrations;
-      return (
-        dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day) ||
-        a.time.localeCompare(b.time)
-      );
-    });
-  }, [source, day, query, sort]);
-
-  const totalRegistrations = filtered.reduce((sum, item) => sum + item.registrations, 0);
-  const average = filtered.length ? totalRegistrations / filtered.length : 0;
-  const largest = filtered.reduce<ClassRow | null>(
-    (best, item) => (!best || item.registrations > best.registrations ? item : best),
-    null,
+  const totals = useMemo(
+    () =>
+      reports.reduce(
+        (sum, report) => ({
+          scheduled: sum.scheduled + report.scheduled,
+          showed: sum.showed + report.showed,
+          closed: sum.closed + report.closed,
+        }),
+        { scheduled: 0, showed: 0, closed: 0 },
+      ),
+    [],
   );
-  const maxRegistrations = Math.max(...filtered.map((item) => item.registrations), 1);
-  const byDay = dayOrder
-    .map((label) => ({
-      label,
-      value: filtered
-        .filter((item) => item.day === label)
-        .reduce((sum, item) => sum + item.registrations, 0),
-    }))
-    .filter((item) => item.value > 0);
-  const maxDay = Math.max(...byDay.map((item) => item.value), 1);
 
-  function resetFilters() {
-    setSource("All reports");
-    setDay("All days");
-    setQuery("");
-    setSort("schedule");
-  }
+  const classRows = useMemo(() => {
+    const rows = selected.classes.filter((row) => dayFilter === "All days" || row.day === dayFilter);
+    return [...rows].sort((a, b) => {
+      if (sort === "show") return pct(b.showed, b.scheduled) - pct(a.showed, a.scheduled);
+      if (sort === "close") return pct(b.closed, b.showed) - pct(a.closed, a.showed);
+      if (sort === "volume") return b.scheduled - a.scheduled;
+      return days.indexOf(a.day) - days.indexOf(b.day) || a.time.localeCompare(b.time);
+    });
+  }, [selected, dayFilter, sort]);
 
   return (
     <main>
-      <header className="topbar">
-        <a className="brand" href="#top" aria-label="Class view home">
-          <span className="brand-mark">C</span>
-          <span>Classview</span>
-        </a>
-        <div className="topbar-meta">
-          <span className="status-dot" />
-          3 reports connected
-          <span className="divider" />
-          Updated today
+      <header className="navy-header">
+        <div className="wordmark">
+          <span className="shield">K</span>
+          <div><strong>KIDSTRONG</strong><small>REGIONAL PERFORMANCE</small></div>
+        </div>
+        <div className="header-title">
+          <span>TRIAL PERFORMANCE COMMAND CENTER</span>
+          <strong>JULY REPORTS</strong>
+        </div>
+        <div className="date-lockup">
+          <span className="calendar-icon">27</span>
+          <div><small>REPORTING WINDOW</small><strong>July 1 - July 27</strong></div>
         </div>
       </header>
 
-      <div className="dashboard" id="top">
-        <section className="intro">
+      <div className="page-shell">
+        <section className="command-row">
           <div>
-            <p className="eyebrow">CENTER CLASS REPORTS</p>
-            <h1>Every class, in one clear view.</h1>
-            <p className="intro-copy">
-              A combined snapshot of your ages 2–4, ages 7–8, and Sunday class reports.
-            </p>
+            <p className="kicker">3 CENTER ROLLUP</p>
+            <h1>See the story behind every trial.</h1>
+            <p>Compare center performance, then drill into the days and class times driving each result.</p>
           </div>
-          <button className="outline-button" onClick={resetFilters}>
-            Reset view
-          </button>
+          <div className="center-switcher" aria-label="Select center">
+            {reports.map((report) => (
+              <button
+                className={centerId === report.id ? "active" : ""}
+                key={report.id}
+                onClick={() => { setCenterId(report.id); setDayFilter("All days"); }}
+              >
+                {report.center}<span>{report.month}</span>
+              </button>
+            ))}
+          </div>
         </section>
 
-        <section className="filters" aria-label="Dashboard filters">
-          <label className="search-box">
-            <span aria-hidden="true">⌕</span>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search classes or programs"
-              aria-label="Search classes or programs"
-            />
-          </label>
-          <label>
-            <span className="sr-only">Report</span>
-            <select value={source} onChange={(event) => setSource(event.target.value)}>
-              <option>All reports</option>
-              {reportData.sources.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="sr-only">Day</span>
-            <select value={day} onChange={(event) => setDay(event.target.value)}>
-              <option>All days</option>
-              {dayOrder.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
+        <section className="rollup-strip">
+          <div><small>ALL CENTERS SCHEDULED</small><strong>{totals.scheduled}</strong></div>
+          <div><small>TRIALS SHOWED</small><strong>{totals.showed}</strong><span>{rate(totals.showed, totals.scheduled)} show</span></div>
+          <div><small>TRIALS CLOSED</small><strong>{totals.closed}</strong><span>{rate(totals.closed, totals.showed)} close</span></div>
+          <div className="rollup-insight"><small>REGIONAL READOUT</small><p>Mount Laurel leads show rate. Voorhees leads close rate. Brick has the largest trial volume.</p></div>
         </section>
 
-        <section className="metrics" aria-label="Summary metrics">
-          <article className="metric-card primary">
-            <p>Active registrations</p>
-            <strong>{totalRegistrations}</strong>
-            <span>across the current view</span>
-          </article>
-          <article className="metric-card">
-            <p>Class sections</p>
-            <strong>{filtered.length}</strong>
-            <span>{source === "All reports" ? "from all 3 reports" : `in ${source}`}</span>
-          </article>
-          <article className="metric-card">
-            <p>Average class size</p>
-            <strong>{average.toFixed(1)}</strong>
-            <span>registrations per section</span>
-          </article>
-          <article className="metric-card">
-            <p>Largest section</p>
-            <strong>{largest?.registrations ?? 0}</strong>
-            <span>{largest?.className ?? "No matching classes"}</span>
-          </article>
-        </section>
-
-        <section className="analytics-grid">
-          <article className="panel class-load">
-            <div className="panel-heading">
-              <div>
-                <p className="section-label">CLASS LOAD</p>
-                <h2>Registration by section</h2>
+        <section className="center-comparison">
+          {reports.map((report) => (
+            <button
+              className={`center-card ${report.id === centerId ? "selected" : ""}`}
+              key={report.id}
+              onClick={() => setCenterId(report.id)}
+            >
+              <div className="center-card-head"><div><small>{report.month}</small><h2>{report.center}</h2></div><span>View center →</span></div>
+              <div className="center-stats">
+                <div><strong>{report.scheduled}</strong><small>Scheduled</small></div>
+                <div><strong>{report.showed}</strong><small>Showed</small></div>
+                <div><strong>{report.closed}</strong><small>Closed</small></div>
               </div>
-              <span className="quiet-label">Top sections</span>
-            </div>
-            <div className="bar-list">
-              {[...filtered]
-                .sort((a, b) => b.registrations - a.registrations)
-                .slice(0, 6)
-                .map((item) => (
-                  <div className="bar-row" key={`${item.source}-${item.className}`}>
-                    <div className="bar-label">
-                      <span>{item.className}</span>
-                      <strong>{item.registrations}</strong>
-                    </div>
-                    <div className="bar-track">
-                      <span
-                        className="bar-fill"
-                        style={{ width: `${(item.registrations / maxRegistrations) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              {!filtered.length && <p className="empty-copy">No classes match these filters.</p>}
-            </div>
-          </article>
-
-          <article className="panel day-mix">
-            <div className="panel-heading">
-              <div>
-                <p className="section-label">WEEKLY MIX</p>
-                <h2>Where registrations land</h2>
+              <div className="rate-pair">
+                <div><span>Show rate</span><strong>{rate(report.showed, report.scheduled)}</strong><i><b style={{ width: rate(report.showed, report.scheduled) }} /></i></div>
+                <div><span>Close rate</span><strong>{rate(report.closed, report.showed)}</strong><i><b style={{ width: rate(report.closed, report.showed) }} /></i></div>
               </div>
-            </div>
-            <div className="day-chart">
-              {byDay.map((item) => (
-                <div className="day-column" key={item.label}>
-                  <strong>{item.value}</strong>
-                  <div className="day-bar-shell">
-                    <span style={{ height: `${(item.value / maxDay) * 100}%` }} />
-                  </div>
-                  <small>{item.label.slice(0, 3)}</small>
+            </button>
+          ))}
+        </section>
+
+        <section className="section-title">
+          <div><p className="kicker">CENTER DETAIL</p><h2>{selected.center} performance</h2></div>
+          <span>{selected.dateRange} · All trial classes</span>
+        </section>
+
+        <section className="kpi-grid">
+          <article><span className="metric-icon blue">S</span><div><small>TRIALS SCHEDULED</small><strong>{selected.scheduled}</strong><p>100% of total</p></div></article>
+          <article><span className="metric-icon green">SH</span><div><small>TRIALS SHOWED</small><strong>{selected.showed}</strong><p>{rate(selected.showed, selected.scheduled)} show rate</p></div></article>
+          <article><span className="metric-icon navy">C</span><div><small>TRIALS CLOSED</small><strong>{selected.closed}</strong><p>{rate(selected.closed, selected.showed)} close rate</p></div></article>
+          <article><span className="metric-icon red">NS</span><div><small>NO SHOWS</small><strong>{selected.scheduled - selected.showed}</strong><p>{rate(selected.scheduled - selected.showed, selected.scheduled)} no-show rate</p></div></article>
+        </section>
+
+        <section className="analysis-grid">
+          <article className="panel day-table-panel">
+            <div className="panel-bar"><h3>TRIAL PERFORMANCE BY DAY</h3><span>{selected.center}</span></div>
+            <div className="day-table">
+              <div className="day-table-head"><span>Day</span><span>Sched</span><span>Showed</span><span>Closed</span><span>Show %</span><span>Close %</span></div>
+              {selected.days.map((row) => (
+                <div className="day-table-row" key={row.day}>
+                  <strong>{row.day}</strong><span>{row.scheduled}</span><span>{row.showed}</span><span>{row.closed}</span>
+                  <span className={tone(pct(row.showed, row.scheduled))}>{rate(row.showed, row.scheduled)}</span>
+                  <span className={tone(pct(row.closed, row.showed))}>{rate(row.closed, row.showed)}</span>
                 </div>
               ))}
-              {!byDay.length && <p className="empty-copy">No schedule data to show.</p>}
+            </div>
+          </article>
+
+          <article className="panel chart-panel">
+            <div className="panel-bar"><h3>RATES BY DAY</h3><span>Show / Close</span></div>
+            <div className="legend"><span><i className="show-key" /> Show rate</span><span><i className="close-key" /> Close rate</span></div>
+            <div className="grouped-chart">
+              {selected.days.map((row) => (
+                <div className="chart-group" key={row.day}>
+                  <div className="bars">
+                    <span className="show-bar" style={{ height: `${pct(row.showed, row.scheduled)}%` }} />
+                    <span className="close-bar" style={{ height: `${pct(row.closed, row.showed)}%` }} />
+                  </div>
+                  <small>{row.day.slice(0, 3).toUpperCase()}</small>
+                </div>
+              ))}
             </div>
           </article>
         </section>
 
-        <section className="panel table-panel">
-          <div className="panel-heading table-heading">
-            <div>
-              <p className="section-label">FULL SCHEDULE</p>
-              <h2>Class breakdown</h2>
-            </div>
-            <label className="sort-control">
-              <span>Sort by</span>
-              <select value={sort} onChange={(event) => setSort(event.target.value)}>
-                <option value="schedule">Schedule</option>
-                <option value="largest">Largest first</option>
-                <option value="smallest">Smallest first</option>
-              </select>
-            </label>
-          </div>
+        <section className="insights-grid">
+          <article className="insight success"><span>★</span><div><small>WHAT'S WORKING</small><strong>{selected.strongest}</strong></div></article>
+          <article className="insight risk"><span>!</span><div><small>GREATEST OPPORTUNITY</small><strong>{selected.opportunity}</strong></div></article>
+          <article className="insight focus"><span>◎</span><div><small>GOLD STANDARD</small><strong>{selected.goldStandard}</strong></div></article>
+        </section>
 
-          <div className="table-wrap">
+        <section className="panel class-panel">
+          <div className="panel-bar class-bar">
+            <div><h3>DAILY CLASS PERFORMANCE DETAILS</h3><span>{classRows.length} class windows shown</span></div>
+            <div className="table-controls">
+              <select value={dayFilter} onChange={(event) => setDayFilter(event.target.value)} aria-label="Filter class details by day">
+                <option>All days</option>{days.map((day) => <option key={day}>{day}</option>)}
+              </select>
+              <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Sort class details">
+                <option value="day">Sort: schedule</option><option value="volume">Sort: volume</option>
+                <option value="show">Sort: show rate</option><option value="close">Sort: close rate</option>
+              </select>
+            </div>
+          </div>
+          <div className="class-table-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>Class</th>
-                  <th>Report</th>
-                  <th>Day &amp; time</th>
-                  <th>Program</th>
-                  <th className="numeric">Registrations</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Day</th><th>Class time</th><th>Scheduled</th><th>Showed</th><th>Closed</th><th>Show %</th><th>Close %</th></tr></thead>
               <tbody>
-                {filtered.map((item) => (
-                  <tr key={`${item.source}-${item.className}`}>
-                    <td>
-                      <span className="class-name">{item.className}</span>
-                    </td>
-                    <td>
-                      <span className={`source-pill source-${item.source.charAt(0).toLowerCase()}`}>
-                        {item.source}
-                      </span>
-                    </td>
-                    <td>
-                      {item.day} <span className="muted">· {shortTime(item.time)}</span>
-                    </td>
-                    <td>{item.program}</td>
-                    <td className="numeric">
-                      <strong>{item.registrations}</strong>
-                    </td>
+                {classRows.map((row) => (
+                  <tr key={`${row.day}-${row.time}`}>
+                    <td><strong>{row.day}</strong></td><td>{row.time}</td><td>{row.scheduled}</td><td>{row.showed}</td><td>{row.closed}</td>
+                    <td><span className={`rate-chip ${tone(pct(row.showed, row.scheduled))}`}>{rate(row.showed, row.scheduled)}</span></td>
+                    <td><span className={`rate-chip ${tone(pct(row.closed, row.showed))}`}>{row.showed ? rate(row.closed, row.showed) : "—"}</span></td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {!filtered.length && (
-              <div className="empty-state">
-                <strong>No matching classes</strong>
-                <span>Try changing a filter or clearing your search.</span>
-              </div>
-            )}
           </div>
         </section>
 
-        <footer>
-          <span>Classview · Combined center reports</span>
-          <span>Student contact details are not shown</span>
-        </footer>
+        <footer>Source: July Trial Performance Reports · Brick, Mount Laurel, and Voorhees <span>Dashboard updated July 28, 2026</span></footer>
       </div>
     </main>
   );
