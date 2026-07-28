@@ -21,6 +21,15 @@ export type CenterMembership = {
 
 export const membershipData: CenterMembership[] = [
   {
+    center: "Turnersville",
+    totalMembers: 496,
+    bomApm: 445,
+    holds: { total: 35, scheduled: null, lifting: 1, starting: 2 },
+    drops: { total: 46, pending: 1 },
+    signups: { goal: 50, current: 33 },
+    pastDue: 12,
+  },
+  {
     center: "Mount Laurel",
     totalMembers: 477,
     bomApm: 396,
