@@ -8,6 +8,10 @@ export type TeamTrialPerformance = {
 };
 
 export const teamTrialData: TeamTrialPerformance[] = [
+  { center: "Brick", person: "Unc. SSU", showRate: 40, closeRate: 42, booked: 30, closed: 5 },
+  { center: "Brick", person: "Ashley", showRate: 91, closeRate: 33, booked: 34, closed: 9 },
+  { center: "Brick", person: "Phillip", showRate: 100, closeRate: 42, booked: 12, closed: 5 },
+  { center: "Brick", person: "Emma", showRate: 89, closeRate: 40, booked: 44, closed: 8 },
   { center: "Turnersville", person: "Unc. SSU", showRate: 56, closeRate: 20, booked: 27, closed: 1 },
   { center: "Turnersville", person: "Jose", showRate: 86, closeRate: 67, booked: 35, closed: 18 },
   { center: "Turnersville", person: "Jackson", showRate: 85, closeRate: 50, booked: 26, closed: 9 },
