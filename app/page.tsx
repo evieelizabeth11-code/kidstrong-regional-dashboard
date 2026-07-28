@@ -78,7 +78,7 @@ export default function Home() {
           <div><small>ALL CENTERS SCHEDULED</small><strong>{totals.scheduled}</strong></div>
           <div><small>TRIALS SHOWED</small><strong>{totals.showed}</strong><span>{rate(totals.showed, totals.scheduled)} show</span></div>
           <div><small>TRIALS CLOSED</small><strong>{totals.closed}</strong><span>{rate(totals.closed, totals.showed)} close</span></div>
-          <div className="rollup-insight"><small>REGIONAL READOUT</small><p>Mount Laurel leads show rate. Voorhees leads close rate. Brick has the largest trial volume.</p></div>
+          <div className="rollup-insight"><small>REGIONAL READOUT</small><p>Mount Laurel leads show rate. Turnersville leads close rate. Brick has the largest trial volume.</p></div>
         </section>
 
         <section className="center-comparison">
@@ -181,7 +181,7 @@ export default function Home() {
           </div>
         </section>
 
-        <footer>Source: July Trial Performance Reports · Brick, Mount Laurel, and Voorhees <span>Dashboard updated July 28, 2026</span></footer>
+        <footer>Source: July Trial Performance Reports · Brick, Mount Laurel, Voorhees, and Turnersville <span>Dashboard updated July 28, 2026</span></footer>
       </div>
     </main>
   );
