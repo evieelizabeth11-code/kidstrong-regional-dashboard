@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { callData } from "../../call-data";
 import { callPersonData } from "../../call-person-data";
 import { reports } from "../../trial-data";
+import { teamTrialData } from "../../team-trial-data";
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
@@ -18,6 +19,7 @@ export default function CenterDetail({ centerId }: { centerId: string }) {
   const selected = reports.find((report) => report.id === centerId) ?? reports[0];
   const selectedCalls = callData.find((item) => item.center === selected.center) ?? callData[0];
   const people = callPersonData.filter((item) => item.center === selected.center);
+  const teamTrials = teamTrialData.filter((item) => item.center === selected.center);
   const namedMinutes = people.reduce((sum, item) => sum + item.totalMinutes, 0);
   const sharedMinutes = Math.max(0, selectedCalls.totalMinutes - namedMinutes);
 
@@ -59,6 +61,35 @@ export default function CenterDetail({ centerId }: { centerId: string }) {
           <article><span className="metric-icon navy">C</span><div><small>TRIALS CLOSED</small><strong>{selected.closed}</strong><p>{rate(selected.closed, selected.showed)} close rate</p></div></article>
           <article><span className="metric-icon black">NS</span><div><small>NO SHOWS</small><strong>{selected.scheduled - selected.showed}</strong><p>{rate(selected.scheduled - selected.showed, selected.scheduled)} no-show rate</p></div></article>
         </section>
+
+        {teamTrials.length > 0 && (
+          <section className="panel team-trial-panel">
+            <div className="panel-bar team-trial-bar">
+              <div><h3>SHOW &amp; CLOSE RATES BY PERSON</h3><span>Voorhees team attribution</span></div>
+              <strong>{teamTrials.reduce((sum, item) => sum + item.closed, 0)} total closes</strong>
+            </div>
+            <div className="team-trial-grid">
+              {teamTrials.map((person) => (
+                <article className="team-trial-card" key={person.person}>
+                  <div className="team-trial-name"><strong>{person.person}</strong><span>{person.booked} booked · {person.closed} closed</span></div>
+                  <div className="team-rate-pair">
+                    <div>
+                      <small>SHOW RATE</small>
+                      <strong>{person.showRate === null ? "—" : `${person.showRate}%`}</strong>
+                      <i><b style={{ width: `${person.showRate ?? 0}%` }} /></i>
+                    </div>
+                    <div>
+                      <small>CLOSE RATE</small>
+                      <strong>{person.closeRate === null ? "—" : `${person.closeRate}%`}</strong>
+                      <i><b style={{ width: `${person.closeRate ?? 0}%` }} /></i>
+                    </div>
+                  </div>
+                  {person.showRate === null && <p>No attributed trials</p>}
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="call-detail-strip">
           <div><small>TOTAL CALL TIME</small><strong>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</strong><span>{selectedCalls.totalHours.toFixed(1)} hours</span></div>
