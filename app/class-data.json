@@ -1,0 +1,271 @@
+{
+  "generated": "July 28, 2026",
+  "sources": [
+    "Ages 2–4",
+    "Ages 7–8",
+    "Sunday classes"
+  ],
+  "classes": [
+    {
+      "source": "Ages 2–4",
+      "program": "2-4 Year Combo",
+      "className": "Combo 2-4 years Monday 4:15",
+      "day": "Monday",
+      "time": "04:15 PM",
+      "registrations": 7,
+      "firstDate": "Sep 18, 2023"
+    },
+    {
+      "source": "Ages 7–8",
+      "program": "7-8 Year",
+      "className": "7-8 Year Monday 5:30",
+      "day": "Monday",
+      "time": "05:30 PM",
+      "registrations": 12,
+      "firstDate": "Jul 17, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "2 Year",
+      "className": "2 Year Monday 9:15",
+      "day": "Monday",
+      "time": "09:15 AM",
+      "registrations": 10,
+      "firstDate": "Sep 18, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "3 Year",
+      "className": "3 Year Tuesday 4:15",
+      "day": "Tuesday",
+      "time": "04:15 PM",
+      "registrations": 10,
+      "firstDate": "Sep 12, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "2 Year",
+      "className": "2 Year Tuesday 5:15",
+      "day": "Tuesday",
+      "time": "05:15 PM",
+      "registrations": 4,
+      "firstDate": "Sep 12, 2023"
+    },
+    {
+      "source": "Ages 7–8",
+      "program": "7-8 Year",
+      "className": "7-8 Year Tuesday 6:30",
+      "day": "Tuesday",
+      "time": "06:30 PM",
+      "registrations": 13,
+      "firstDate": "Jul 25, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "2 Year",
+      "className": "2 Year Wednesday 4:15",
+      "day": "Wednesday",
+      "time": "04:15 PM",
+      "registrations": 7,
+      "firstDate": "Sep 13, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "3 Year",
+      "className": "3 Year Wednesday 5:15",
+      "day": "Wednesday",
+      "time": "05:15 PM",
+      "registrations": 12,
+      "firstDate": "Sep 13, 2023"
+    },
+    {
+      "source": "Ages 7–8",
+      "program": "7-8 Year",
+      "className": "7-8 Year Wednesday 5:30",
+      "day": "Wednesday",
+      "time": "05:30 PM",
+      "registrations": 13,
+      "firstDate": "Jul 19, 2023"
+    },
+    {
+      "source": "Ages 7–8",
+      "program": "7-8 Year",
+      "className": "7-8 Year Thursday 5:15",
+      "day": "Thursday",
+      "time": "05:15 PM",
+      "registrations": 14,
+      "firstDate": "Aug 10, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "2 Year",
+      "className": "2 Year Thursday 9:15",
+      "day": "Thursday",
+      "time": "09:15 AM",
+      "registrations": 15,
+      "firstDate": "Sep 14, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "3 Year",
+      "className": "3 Year Thursday 10:15",
+      "day": "Thursday",
+      "time": "10:15 AM",
+      "registrations": 12,
+      "firstDate": "Sep 14, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "2 Year",
+      "className": "2 Year Saturday 10:15",
+      "day": "Saturday",
+      "time": "10:15 AM",
+      "registrations": 7,
+      "firstDate": "Sep 16, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "3 Year",
+      "className": "3 Year Saturday 10:30",
+      "day": "Saturday",
+      "time": "10:30 AM",
+      "registrations": 16,
+      "firstDate": "Sep 16, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "4 Year",
+      "className": "4 Year Saturday 11:15",
+      "day": "Saturday",
+      "time": "11:15 AM",
+      "registrations": 2,
+      "firstDate": "Sep 16, 2023"
+    },
+    {
+      "source": "Ages 7–8",
+      "program": "7-8 Year",
+      "className": "7-8 Year Saturday 12:30",
+      "day": "Saturday",
+      "time": "12:30 PM",
+      "registrations": 18,
+      "firstDate": "Jul 22, 2023"
+    },
+    {
+      "source": "Sunday classes",
+      "program": "14mo-23 mo",
+      "className": "14mo-23mo Sunday 8:30",
+      "day": "Sunday",
+      "time": "08:30 AM",
+      "registrations": 8,
+      "firstDate": "Apr 9, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "2 Year",
+      "className": "2 Year Sunday 9:15",
+      "day": "Sunday",
+      "time": "09:15 AM",
+      "registrations": 13,
+      "firstDate": "Sep 17, 2023"
+    },
+    {
+      "source": "Sunday classes",
+      "program": "2 Year",
+      "className": "2 Year Sunday 9:15",
+      "day": "Sunday",
+      "time": "09:15 AM",
+      "registrations": 16,
+      "firstDate": "Apr 9, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "4 Year",
+      "className": "4 Year Sunday 9:30",
+      "day": "Sunday",
+      "time": "09:30 AM",
+      "registrations": 1,
+      "firstDate": "Sep 17, 2023"
+    },
+    {
+      "source": "Sunday classes",
+      "program": "4 Year",
+      "className": "4 Year Sunday 9:30",
+      "day": "Sunday",
+      "time": "09:30 AM",
+      "registrations": 17,
+      "firstDate": "Apr 9, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "3 Year",
+      "className": "3 Year Sunday 10:15",
+      "day": "Sunday",
+      "time": "10:15 AM",
+      "registrations": 11,
+      "firstDate": "Sep 17, 2023"
+    },
+    {
+      "source": "Sunday classes",
+      "program": "3 Year",
+      "className": "3 Year Sunday 10:15",
+      "day": "Sunday",
+      "time": "10:15 AM",
+      "registrations": 12,
+      "firstDate": "Apr 9, 2023"
+    },
+    {
+      "source": "Sunday classes",
+      "program": "5-6 Year",
+      "className": "5-6 Year Sunday 10:30",
+      "day": "Sunday",
+      "time": "10:30 AM",
+      "registrations": 13,
+      "firstDate": "Apr 9, 2023"
+    },
+    {
+      "source": "Sunday classes",
+      "program": "4 Year",
+      "className": "4 Year Sunday 11:15",
+      "day": "Sunday",
+      "time": "11:15 AM",
+      "registrations": 15,
+      "firstDate": "Apr 9, 2023"
+    },
+    {
+      "source": "Ages 2–4",
+      "program": "3 Year",
+      "className": "3 Year Sunday 11:30",
+      "day": "Sunday",
+      "time": "11:30 AM",
+      "registrations": 7,
+      "firstDate": "Sep 17, 2023"
+    },
+    {
+      "source": "Sunday classes",
+      "program": "3 Year",
+      "className": "3 Year Sunday 11:30",
+      "day": "Sunday",
+      "time": "11:30 AM",
+      "registrations": 12,
+      "firstDate": "Apr 9, 2023"
+    },
+    {
+      "source": "Sunday classes",
+      "program": "5-6 Year",
+      "className": "5-6 Year Sunday 12:15",
+      "day": "Sunday",
+      "time": "12:15 PM",
+      "registrations": 13,
+      "firstDate": "Apr 9, 2023"
+    },
+    {
+      "source": "Sunday classes",
+      "program": "Flex",
+      "className": "Flex Independent 4+",
+      "day": "Other",
+      "time": "02:15 PM",
+      "registrations": 1,
+      "firstDate": "Apr 9, 2023"
+    }
+  ]
+}
