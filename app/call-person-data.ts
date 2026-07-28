@@ -16,7 +16,6 @@ export const callPersonData: PersonCalls[] = [
   { center: "Brick", person: "Curtis Schofield", totalCalls: 31, inboundCalls: 0, outboundCalls: 31, totalMinutes: 74.18, avgMinutes: 2.39 },
   { center: "Brick", person: "Jamie Pena", totalCalls: 22, inboundCalls: 0, outboundCalls: 22, totalMinutes: 67, avgMinutes: 3.05 },
   { center: "Brick", person: "Casey Vineyard", totalCalls: 51, inboundCalls: 0, outboundCalls: 51, totalMinutes: 59.43, avgMinutes: 1.17 },
-  { center: "Brick", person: "Evie Lamont", totalCalls: 39, inboundCalls: 0, outboundCalls: 39, totalMinutes: 53.02, avgMinutes: 1.36 },
   { center: "Brick", person: "Marissa Baker", totalCalls: 48, inboundCalls: 0, outboundCalls: 48, totalMinutes: 51.47, avgMinutes: 1.07 },
   { center: "Mount Laurel", person: "Sydney Sventy", totalCalls: 610, inboundCalls: 0, outboundCalls: 608, totalMinutes: 1154.9, avgMinutes: 1.89 },
   { center: "Mount Laurel", person: "Casey Vineyard", totalCalls: 686, inboundCalls: 108, outboundCalls: 578, totalMinutes: 1094.97, avgMinutes: 1.6 },
@@ -28,6 +27,5 @@ export const callPersonData: PersonCalls[] = [
   { center: "Voorhees", person: "Curtis Schofield", totalCalls: 413, inboundCalls: 149, outboundCalls: 264, totalMinutes: 942.63, avgMinutes: 2.28 },
   { center: "Voorhees", person: "Marissa Baker", totalCalls: 615, inboundCalls: 146, outboundCalls: 469, totalMinutes: 940.22, avgMinutes: 1.53 },
   { center: "Voorhees", person: "Kate Plantarich", totalCalls: 345, inboundCalls: 116, outboundCalls: 229, totalMinutes: 327.17, avgMinutes: 0.95 },
-  { center: "Voorhees", person: "Evie Lamont", totalCalls: 1, inboundCalls: 0, outboundCalls: 1, totalMinutes: 1.9, avgMinutes: 1.9 },
   { center: "Voorhees", person: "Brooke Alton", totalCalls: 116, inboundCalls: 116, outboundCalls: 0, totalMinutes: 0, avgMinutes: 0 },
 ];

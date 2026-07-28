@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { callData } from "../../call-data";
 import { callPersonData } from "../../call-person-data";
+import { membershipData } from "../../membership-data";
 import { reports } from "../../trial-data";
 import { teamTrialData } from "../../team-trial-data";
 
@@ -20,6 +21,7 @@ export default function CenterDetail({ centerId }: { centerId: string }) {
   const selectedCalls = callData.find((item) => item.center === selected.center) ?? callData[0];
   const people = callPersonData.filter((item) => item.center === selected.center);
   const teamTrials = teamTrialData.filter((item) => item.center === selected.center);
+  const membership = membershipData.find((item) => item.center === selected.center);
   const namedMinutes = people.reduce((sum, item) => sum + item.totalMinutes, 0);
   const sharedMinutes = Math.max(0, selectedCalls.totalMinutes - namedMinutes);
 
@@ -88,6 +90,40 @@ export default function CenterDetail({ centerId }: { centerId: string }) {
                 </article>
               ))}
             </div>
+          </section>
+        )}
+
+        {membership && (
+          <section className="panel membership-panel">
+            <div className="panel-bar membership-bar">
+              <div><h3>MEMBERSHIP HEALTH</h3><span>Beginning-of-month APM, holds, drops, and growth</span></div>
+              <div className="membership-apm"><small>BOM ACTIVE PAYING MEMBERS</small><strong>{membership.bomApm}</strong></div>
+            </div>
+            <div className="membership-grid">
+              <article className="membership-card signup-card">
+                <small>MONTHLY SIGN-UP GOAL</small>
+                <div className="membership-main-value"><strong>{membership.signups.current}</strong><span>of {membership.signups.goal}</span><em>{pct(membership.signups.current, membership.signups.goal).toFixed(1)}%</em></div>
+                <i><b style={{ width: `${Math.min(pct(membership.signups.current, membership.signups.goal), 100)}%` }} /></i>
+                <p>{Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining</p>
+              </article>
+              <article className="membership-card">
+                <small>HOLDS</small><div className="membership-main-value"><strong>{membership.holds.total}</strong></div>
+                <div className="membership-subgrid">
+                  <div><span>Scheduled</span><b>{membership.holds.scheduled ?? "—"}</b></div>
+                  <div><span>Lifting</span><b>{membership.holds.lifting}</b></div>
+                  <div><span>Starting</span><b>{membership.holds.starting ?? "—"}</b></div>
+                </div>
+              </article>
+              <article className="membership-card">
+                <small>DROPS</small><div className="membership-main-value"><strong>{membership.drops.total}</strong><span>total</span></div>
+                <div className="drop-status"><strong>{membership.drops.pending}</strong><span>pending drops left to fall off</span></div>
+              </article>
+              <article className="membership-card past-due-card">
+                <small>PAST-DUE MEMBERSHIPS</small><div className="membership-main-value"><strong>{membership.pastDue}</strong></div>
+                <p>members currently in past-due status</p>
+              </article>
+            </div>
+            {(membership.holds.scheduled === null || membership.holds.starting === null) && <p className="membership-footnote">Scheduled and starting hold counts are awaiting the next data update.</p>}
           </section>
         )}
 
