@@ -32,6 +32,8 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const currentActivePaying = membership ? membership.totalMembers - membership.holds.total - membership.pastDue : 0;
   const projectedSignups = membership ? Math.round((membership.signups.current / 27) * 31) : 0;
   const projectedAdditionalSignups = membership ? Math.max(0, projectedSignups - membership.signups.current) : 0;
+  const noSignupEomActive = membership ? currentActivePaying - membership.drops.pending : 0;
+  const goalEomActive = membership ? noSignupEomActive + Math.max(0, membership.signups.goal - membership.signups.current) : 0;
   const projectedEomActive = membership ? currentActivePaying + projectedAdditionalSignups - membership.drops.pending : 0;
   const signupsNeeded = membership ? Math.max(0, membership.signups.goal - membership.signups.current) : 0;
   const centerCloseRate = pct(selected.closed, selected.showed) / 100;
@@ -142,12 +144,12 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             <span>=</span><article className="active-paying-now"><small>CURRENT ACTIVE PAYING</small><strong>{currentActivePaying}</strong></article>
           </div>
           <div className="membership-pace"><div><small>MONTHLY SIGN-UP PACE</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected by July 27</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
+          <div className="membership-scenarios">
+            <article className="eom-forecast no-signups"><small>IF NO ONE ELSE SIGNS UP</small><strong>{noSignupEomActive}</strong><span>{currentActivePaying} current − {membership.drops.pending} pending drops</span></article>
+            <article className="eom-forecast goal-scenario"><small>IF THE SIGN-UP GOAL IS HIT</small><strong>{goalEomActive}</strong><span>{noSignupEomActive} after drops + {Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups needed</span></article>
+            <article className="eom-forecast pace-scenario"><small>AT CURRENT SIGN-UP PACE</small><strong>{projectedEomActive}</strong><span>{currentActivePaying} current + {projectedAdditionalSignups} projected new − {membership.drops.pending} pending drops</span></article>
+          </div>
           <div className="membership-forecast-grid">
-            <article className="eom-forecast">
-              <small>ESTIMATED EOM ACTIVE PAYING</small>
-              <strong>{projectedEomActive}</strong>
-              <span>{currentActivePaying} current + {projectedAdditionalSignups} projected new − {membership.drops.pending} pending drops</span>
-            </article>
             <article className="trial-funnel-needed">
               <small>WHAT IT TAKES TO HIT {membership.signups.goal} SIGN-UPS</small>
               {signupsNeeded > 0 ? <>
