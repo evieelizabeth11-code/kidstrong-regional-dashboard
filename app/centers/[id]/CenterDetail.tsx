@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { callData } from "../../call-data";
+import { callPersonData } from "../../call-person-data";
 import { reports } from "../../trial-data";
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -16,6 +17,9 @@ export default function CenterDetail({ centerId }: { centerId: string }) {
   const [sort, setSort] = useState("day");
   const selected = reports.find((report) => report.id === centerId) ?? reports[0];
   const selectedCalls = callData.find((item) => item.center === selected.center) ?? callData[0];
+  const people = callPersonData.filter((item) => item.center === selected.center);
+  const namedMinutes = people.reduce((sum, item) => sum + item.totalMinutes, 0);
+  const sharedMinutes = Math.max(0, selectedCalls.totalMinutes - namedMinutes);
 
   const classRows = useMemo(() => {
     const rows = selected.classes.filter((row) => dayFilter === "All days" || row.day === dayFilter);
@@ -61,6 +65,33 @@ export default function CenterDetail({ centerId }: { centerId: string }) {
           <div><small>AVERAGE CALL LENGTH</small><strong>{selectedCalls.avgMinutes.toFixed(2)} min</strong><span>across {selectedCalls.totalCalls.toLocaleString()} calls</span></div>
           <div><small>OUTBOUND EFFORT</small><strong>{selectedCalls.outboundCalls.toLocaleString()}</strong><span>{pct(selectedCalls.outboundCalls, selectedCalls.totalCalls).toFixed(1)}% of calls</span></div>
           <div><small>FOLLOW-UP SIGNALS</small><strong>{(selectedCalls.missedCalls + selectedCalls.voicemails).toLocaleString()}</strong><span>{selectedCalls.missedCalls} missed · {selectedCalls.voicemails} voicemail</span></div>
+        </section>
+
+        <section className="panel people-call-panel">
+          <div className="panel-bar people-call-bar">
+            <div><h3>TEAM CALL ACTIVITY</h3><span>Ranked by total call minutes</span></div>
+            <div className="shared-call-note"><strong>{sharedMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</strong><span>shared / unassigned inbound time</span></div>
+          </div>
+          <div className="people-call-head">
+            <span>Team member</span><span>Call time</span><span>Center share</span><span>Total calls</span><span>Inbound</span><span>Outbound</span><span>Avg. length</span>
+          </div>
+          <div className="people-call-list">
+            {people.map((person, index) => {
+              const centerShare = pct(person.totalMinutes, selectedCalls.totalMinutes);
+              return (
+                <div className="people-call-row" key={person.person}>
+                  <div className="person-name"><b>{index + 1}</b><strong>{person.person}</strong></div>
+                  <div className="person-call-time"><strong>{person.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</strong><span>{(person.totalMinutes / 60).toFixed(1)} hrs</span></div>
+                  <div className="person-share"><strong>{centerShare.toFixed(1)}%</strong><i><b style={{ width: `${Math.min(centerShare, 100)}%` }} /></i></div>
+                  <span>{person.totalCalls.toLocaleString()}</span>
+                  <span>{person.inboundCalls.toLocaleString()}</span>
+                  <span>{person.outboundCalls.toLocaleString()}</span>
+                  <span>{person.avgMinutes.toFixed(2)} min</span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="people-call-footnote">Missed calls and voicemails are reported at the center level and are not assigned to individual users in the source report.</p>
         </section>
 
         <section className="analysis-grid">
