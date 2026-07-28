@@ -149,6 +149,7 @@ footer { display:flex;justify-content:space-between;color:#8294b8;font-size:9px;
 .overview-card-metrics div:last-child { border:0; }
 .overview-card-metrics small { display:block;color:#9fb0d2;font-size:7px;font-weight:900;margin-bottom:6px; }
 .overview-card-metrics strong { font-size:22px;color:white; }
+.overview-card-metrics .featured-rate strong { font-size:29px;letter-spacing:-.04em;color:var(--green); }
 .overview-call-goal>div { display:flex;justify-content:space-between;font-size:9px;font-weight:900;color:#c4d2ed; }
 .overview-call-goal>div strong { color:var(--green);font-size:14px; }
 .overview-call-goal i,.detail-call-progress i { display:block;height:8px;background:#020b20;border-radius:99px;overflow:hidden;margin:10px 0 8px; }

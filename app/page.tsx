@@ -68,8 +68,8 @@ export default function Home() {
                 </div>
                 <div className="overview-card-metrics">
                   <div><small>SCHEDULED</small><strong>{report.scheduled}</strong></div>
-                  <div><small>SHOW RATE</small><strong>{rate(report.showed, report.scheduled)}</strong></div>
-                  <div><small>CLOSE RATE</small><strong>{rate(report.closed, report.showed)}</strong></div>
+                  <div className="featured-rate"><small>SHOW RATE</small><strong>{rate(report.showed, report.scheduled)}</strong></div>
+                  <div className="featured-rate"><small>CLOSE RATE</small><strong>{rate(report.closed, report.showed)}</strong></div>
                 </div>
                 <div className="overview-call-goal">
                   <div><span>CALL-TIME GOAL</span><strong>{callProgress.toFixed(1)}%</strong></div>
