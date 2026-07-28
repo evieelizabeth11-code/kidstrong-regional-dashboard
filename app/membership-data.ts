@@ -21,6 +21,15 @@ export type CenterMembership = {
 
 export const membershipData: CenterMembership[] = [
   {
+    center: "Mount Laurel",
+    totalMembers: 477,
+    bomApm: 396,
+    holds: { total: 61, scheduled: 4, lifting: 1, starting: null },
+    drops: { total: 26, pending: 3 },
+    signups: { goal: 36, current: 43 },
+    pastDue: 16,
+  },
+  {
     center: "Voorhees",
     totalMembers: 485,
     bomApm: 407,

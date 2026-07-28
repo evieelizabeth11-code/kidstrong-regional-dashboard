@@ -28,7 +28,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const callGoalPct = pct(selectedCalls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
   const signupGoalPct = membership ? pct(membership.signups.current, membership.signups.goal) : 0;
   const expectedSignups = membership ? membership.signups.goal * (27 / 31) : 0;
-  const paceLabel = membership ? (membership.signups.current >= expectedSignups - 1 ? "On pace" : "Behind pace") : "";
+  const paceLabel = membership ? (membership.signups.current >= membership.signups.goal ? "Goal exceeded" : membership.signups.current >= expectedSignups - 1 ? "On pace" : "Behind pace") : "";
   const currentActivePaying = membership ? membership.totalMembers - membership.holds.total - membership.pastDue : 0;
   const projectedSignups = membership ? Math.round((membership.signups.current / 27) * 31) : 0;
   const projectedAdditionalSignups = membership ? Math.max(0, projectedSignups - membership.signups.current) : 0;
@@ -149,9 +149,11 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
               <span>{currentActivePaying} current + {projectedAdditionalSignups} projected new − {membership.drops.pending} pending drops</span>
             </article>
             <article className="trial-funnel-needed">
-              <small>WHAT IT TAKES TO HIT 51 SIGN-UPS</small>
-              <div><b>{scheduledNeeded}</b><span>more trials<br />scheduled</span><em>→</em><b>{showsNeeded}</b><span>need to<br />show</span><em>→</em><b>{signupsNeeded}</b><span>need to<br />sign up</span></div>
-              <p>Based on the current {rate(selected.showed, selected.scheduled)} show rate and {rate(selected.closed, selected.showed)} close rate.</p>
+              <small>WHAT IT TAKES TO HIT {membership.signups.goal} SIGN-UPS</small>
+              {signupsNeeded > 0 ? <>
+                <div><b>{scheduledNeeded}</b><span>more trials<br />scheduled</span><em>→</em><b>{showsNeeded}</b><span>need to<br />show</span><em>→</em><b>{signupsNeeded}</b><span>need to<br />sign up</span></div>
+                <p>Based on the current {rate(selected.showed, selected.scheduled)} show rate and {rate(selected.closed, selected.showed)} close rate.</p>
+              </> : <div className="goal-achieved"><b>✓</b><span>Goal achieved<br /><strong>{membership.signups.current - membership.signups.goal} sign-ups above target</strong></span></div>}
             </article>
           </div>
           <div className="membership-grid">
