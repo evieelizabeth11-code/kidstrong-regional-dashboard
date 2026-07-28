@@ -39,16 +39,16 @@ export default function Home() {
         <section className="overview-hero">
           <div>
             <p className="kicker">4 CENTER ROLLUP</p>
-            <h1>One region.<br /><span>Four centers.</span></h1>
+            <h1>One region. <span>Four centers.</span></h1>
           </div>
           <p>See the regional picture at a glance, then select a center for its complete trial and call-time performance story.</p>
         </section>
 
         <section className="regional-totals" aria-label="Regional totals">
           <article><small>TRIALS SCHEDULED</small><strong>{totals.scheduled}</strong><span>across four centers</span></article>
-          <article><small>TRIALS SHOWED</small><strong>{totals.showed}</strong><span>{rate(totals.showed, totals.scheduled)} show rate</span></article>
-          <article><small>TRIALS CLOSED</small><strong>{totals.closed}</strong><span>{rate(totals.closed, totals.showed)} close rate</span></article>
-          <article><small>CALL TIME</small><strong>{totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><span>of 12,000 regional minutes · {pct(totalMinutes, 12000).toFixed(1)}%</span></article>
+          <article><small>TRIALS SHOWED</small><div className="regional-value-pair"><strong>{totals.showed}</strong><em>{rate(totals.showed, totals.scheduled)}</em></div><span>regional show rate</span></article>
+          <article><small>TRIALS CLOSED</small><div className="regional-value-pair"><strong>{totals.closed}</strong><em>{rate(totals.closed, totals.showed)}</em></div><span>regional close rate</span></article>
+          <article><small>CALL TIME</small><div className="regional-value-pair"><strong>{totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><em>{pct(totalMinutes, 12000).toFixed(1)}%</em></div><span>of 12,000 regional minutes</span></article>
         </section>
 
         <section className="overview-section-head">
