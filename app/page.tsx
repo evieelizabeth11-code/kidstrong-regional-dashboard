@@ -8,6 +8,7 @@ const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
 const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
 const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor" : "attention");
+const MONTHLY_CALL_MINUTE_GOAL = 3000;
 
 export default function Home() {
   const [centerId, setCenterId] = useState(reports[0].id);
@@ -34,9 +35,10 @@ export default function Home() {
         (sum, item) => ({
           calls: sum.calls + item.totalCalls,
           hours: sum.hours + item.totalHours,
+          minutes: sum.minutes + item.totalMinutes,
           outbound: sum.outbound + item.outboundCalls,
         }),
-        { calls: 0, hours: 0, outbound: 0 },
+        { calls: 0, hours: 0, minutes: 0, outbound: 0 },
       ),
     [],
   );
@@ -117,13 +119,14 @@ export default function Home() {
         </section>
 
         <section className="section-title call-section-title">
-          <div><p className="kicker">CENTER CALL ACTIVITY</p><h2>Phone effort by center</h2></div>
-          <span>{callTotals.calls.toLocaleString()} calls · {callTotals.hours.toFixed(1)} total talk hours</span>
+          <div><p className="kicker">3,000-MINUTE MONTHLY GOAL</p><h2>Call-time progress by center</h2></div>
+          <span>{callTotals.minutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} of {(MONTHLY_CALL_MINUTE_GOAL * callData.length).toLocaleString()} regional minutes · {pct(callTotals.minutes, MONTHLY_CALL_MINUTE_GOAL * callData.length).toFixed(1)}%</span>
         </section>
 
         <section className="call-grid">
           {callData.map((item) => {
-            const outboundShare = pct(item.outboundCalls, item.totalCalls);
+            const goalProgress = pct(item.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
+            const minutesRemaining = Math.max(0, MONTHLY_CALL_MINUTE_GOAL - item.totalMinutes);
             return (
               <button
                 className={`call-card ${item.center === selected.center ? "selected" : ""}`}
@@ -133,13 +136,13 @@ export default function Home() {
                   if (match) setCenterId(match.id);
                 }}
               >
-                <div className="call-card-head"><strong>{item.center}</strong><span>{item.totalHours.toFixed(1)} hrs</span></div>
-                <div className="call-volume"><strong>{item.totalCalls.toLocaleString()}</strong><small>TOTAL CALLS</small></div>
+                <div className="call-card-head"><strong>{item.center}</strong><span>{goalProgress.toFixed(1)}% of goal</span></div>
+                <div className="call-volume"><strong>{item.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><small>OF 3,000 MINUTES</small></div>
+                <div className="goal-meter" aria-label={`${item.center} is at ${goalProgress.toFixed(1)} percent of its monthly call-time goal`}><i><b style={{ width: `${Math.min(goalProgress, 100)}%` }} /></i></div>
                 <div className="call-split">
-                  <span><b>{item.inboundCalls.toLocaleString()}</b> inbound</span>
-                  <span><b>{item.outboundCalls.toLocaleString()}</b> outbound</span>
+                  <span><b>{minutesRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}</b> min remaining</span>
+                  <span><b>{item.totalHours.toFixed(1)}</b> hours</span>
                 </div>
-                <div className="outbound-meter"><i><b style={{ width: `${outboundShare}%` }} /></i><span>{outboundShare.toFixed(0)}% outbound</span></div>
               </button>
             );
           })}
@@ -158,7 +161,7 @@ export default function Home() {
         </section>
 
         <section className="call-detail-strip">
-          <div><small>{selected.center.toUpperCase()} CALL TIME</small><strong>{selectedCalls.totalHours.toFixed(1)} hours</strong><span>{selectedCalls.totalMinutes.toLocaleString()} minutes</span></div>
+          <div><small>MONTHLY CALL-TIME GOAL</small><strong>{pct(selectedCalls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL).toFixed(1)}%</strong><span>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} of 3,000 minutes</span></div>
           <div><small>AVERAGE CALL LENGTH</small><strong>{selectedCalls.avgMinutes.toFixed(2)} min</strong><span>across all calls</span></div>
           <div><small>OUTBOUND EFFORT</small><strong>{selectedCalls.outboundCalls.toLocaleString()}</strong><span>{pct(selectedCalls.outboundCalls, selectedCalls.totalCalls).toFixed(1)}% of calls</span></div>
           <div><small>FOLLOW-UP SIGNALS</small><strong>{(selectedCalls.missedCalls + selectedCalls.voicemails).toLocaleString()}</strong><span>{selectedCalls.missedCalls} missed · {selectedCalls.voicemails} voicemail</span></div>
