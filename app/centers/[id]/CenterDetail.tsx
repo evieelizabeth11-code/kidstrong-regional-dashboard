@@ -29,6 +29,15 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const signupGoalPct = membership ? pct(membership.signups.current, membership.signups.goal) : 0;
   const expectedSignups = membership ? membership.signups.goal * (27 / 31) : 0;
   const paceLabel = membership ? (membership.signups.current >= expectedSignups - 1 ? "On pace" : "Behind pace") : "";
+  const currentActivePaying = membership ? membership.totalMembers - membership.holds.total - membership.pastDue : 0;
+  const projectedSignups = membership ? Math.round((membership.signups.current / 27) * 31) : 0;
+  const projectedAdditionalSignups = membership ? Math.max(0, projectedSignups - membership.signups.current) : 0;
+  const projectedEomActive = membership ? currentActivePaying + projectedAdditionalSignups - membership.drops.pending : 0;
+  const signupsNeeded = membership ? Math.max(0, membership.signups.goal - membership.signups.current) : 0;
+  const centerCloseRate = pct(selected.closed, selected.showed) / 100;
+  const centerShowRate = pct(selected.showed, selected.scheduled) / 100;
+  const showsNeeded = centerCloseRate ? Math.ceil(signupsNeeded / centerCloseRate) : 0;
+  const scheduledNeeded = centerShowRate ? Math.ceil(showsNeeded / centerShowRate) : 0;
 
   const classRows = useMemo(() => {
     const rows = selected.classes.filter((row) => dayFilter === "All days" || row.day === dayFilter);
@@ -126,7 +135,25 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
 
         {section === "membership" && membership && <section className="panel membership-panel">
           <div className="panel-bar membership-bar"><div><h3>MEMBERSHIP HEALTH</h3><span>Growth, retention, and account health</span></div><div className="membership-apm"><small>BOM ACTIVE PAYING MEMBERS</small><strong>{membership.bomApm}</strong></div></div>
+          <div className="membership-current-row">
+            <article><small>TOTAL MEMBERS</small><strong>{membership.totalMembers}</strong></article>
+            <span>−</span><article><small>HOLDS</small><strong>{membership.holds.total}</strong></article>
+            <span>−</span><article><small>PAST DUE</small><strong>{membership.pastDue}</strong></article>
+            <span>=</span><article className="active-paying-now"><small>CURRENT ACTIVE PAYING</small><strong>{currentActivePaying}</strong></article>
+          </div>
           <div className="membership-pace"><div><small>MONTHLY SIGN-UP PACE</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected by July 27</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
+          <div className="membership-forecast-grid">
+            <article className="eom-forecast">
+              <small>ESTIMATED EOM ACTIVE PAYING</small>
+              <strong>{projectedEomActive}</strong>
+              <span>{currentActivePaying} current + {projectedAdditionalSignups} projected new − {membership.drops.pending} pending drops</span>
+            </article>
+            <article className="trial-funnel-needed">
+              <small>WHAT IT TAKES TO HIT 51 SIGN-UPS</small>
+              <div><b>{scheduledNeeded}</b><span>more trials<br />scheduled</span><em>→</em><b>{showsNeeded}</b><span>need to<br />show</span><em>→</em><b>{signupsNeeded}</b><span>need to<br />sign up</span></div>
+              <p>Based on the current {rate(selected.showed, selected.scheduled)} show rate and {rate(selected.closed, selected.showed)} close rate.</p>
+            </article>
+          </div>
           <div className="membership-grid">
             <article className="membership-card"><small>HOLDS</small><div className="membership-main-value"><strong>{membership.holds.total}</strong></div><div className="membership-subgrid"><div><span>Scheduled</span><b>{membership.holds.scheduled ?? "—"}</b></div><div><span>Lifting</span><b>{membership.holds.lifting}</b></div><div><span>Starting</span><b>{membership.holds.starting ?? "—"}</b></div></div></article>
             <article className="membership-card"><small>DROPS</small><div className="membership-main-value"><strong>{membership.drops.total}</strong><span>total</span></div><div className="drop-status"><strong>{membership.drops.pending}</strong><span>pending drops left to fall off</span></div></article>

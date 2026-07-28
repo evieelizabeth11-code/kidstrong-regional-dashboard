@@ -1,5 +1,6 @@
 export type CenterMembership = {
   center: string;
+  totalMembers: number;
   bomApm: number;
   holds: {
     total: number;
@@ -21,6 +22,7 @@ export type CenterMembership = {
 export const membershipData: CenterMembership[] = [
   {
     center: "Voorhees",
+    totalMembers: 485,
     bomApm: 407,
     holds: { total: 67, scheduled: null, lifting: 0, starting: null },
     drops: { total: 34, pending: 7 },
