@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
   const origin = host ? `${protocol}://${host}` : "https://classview.openai.site";
   const description =
-    "Compare trial volume, show rate, close rate, day-of-week performance, and class-time opportunities across Brick, Mount Laurel, Voorhees, and Turnersville.";
+    "Compare trial performance and center call activity across Brick, Mount Laurel, Voorhees, and Turnersville.";
 
   return {
     title: "KidStrong | Regional Trial Performance",

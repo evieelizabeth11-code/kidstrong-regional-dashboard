@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { callData } from "./call-data";
 import { reports } from "./trial-data";
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -13,6 +14,7 @@ export default function Home() {
   const [dayFilter, setDayFilter] = useState("All days");
   const [sort, setSort] = useState("day");
   const selected = reports.find((report) => report.id === centerId) ?? reports[0];
+  const selectedCalls = callData.find((item) => item.center === selected.center) ?? callData[0];
 
   const totals = useMemo(
     () =>
@@ -23,6 +25,18 @@ export default function Home() {
           closed: sum.closed + report.closed,
         }),
         { scheduled: 0, showed: 0, closed: 0 },
+      ),
+    [],
+  );
+  const callTotals = useMemo(
+    () =>
+      callData.reduce(
+        (sum, item) => ({
+          calls: sum.calls + item.totalCalls,
+          hours: sum.hours + item.totalHours,
+          outbound: sum.outbound + item.outboundCalls,
+        }),
+        { calls: 0, hours: 0, outbound: 0 },
       ),
     [],
   );
@@ -102,6 +116,35 @@ export default function Home() {
           ))}
         </section>
 
+        <section className="section-title call-section-title">
+          <div><p className="kicker">CENTER CALL ACTIVITY</p><h2>Phone effort by center</h2></div>
+          <span>{callTotals.calls.toLocaleString()} calls · {callTotals.hours.toFixed(1)} total talk hours</span>
+        </section>
+
+        <section className="call-grid">
+          {callData.map((item) => {
+            const outboundShare = pct(item.outboundCalls, item.totalCalls);
+            return (
+              <button
+                className={`call-card ${item.center === selected.center ? "selected" : ""}`}
+                key={item.center}
+                onClick={() => {
+                  const match = reports.find((report) => report.center === item.center);
+                  if (match) setCenterId(match.id);
+                }}
+              >
+                <div className="call-card-head"><strong>{item.center}</strong><span>{item.totalHours.toFixed(1)} hrs</span></div>
+                <div className="call-volume"><strong>{item.totalCalls.toLocaleString()}</strong><small>TOTAL CALLS</small></div>
+                <div className="call-split">
+                  <span><b>{item.inboundCalls.toLocaleString()}</b> inbound</span>
+                  <span><b>{item.outboundCalls.toLocaleString()}</b> outbound</span>
+                </div>
+                <div className="outbound-meter"><i><b style={{ width: `${outboundShare}%` }} /></i><span>{outboundShare.toFixed(0)}% outbound</span></div>
+              </button>
+            );
+          })}
+        </section>
+
         <section className="section-title">
           <div><p className="kicker">CENTER DETAIL</p><h2>{selected.center} performance</h2></div>
           <span>{selected.dateRange} · All trial classes</span>
@@ -112,6 +155,13 @@ export default function Home() {
           <article><span className="metric-icon green">SH</span><div><small>TRIALS SHOWED</small><strong>{selected.showed}</strong><p>{rate(selected.showed, selected.scheduled)} show rate</p></div></article>
           <article><span className="metric-icon navy">C</span><div><small>TRIALS CLOSED</small><strong>{selected.closed}</strong><p>{rate(selected.closed, selected.showed)} close rate</p></div></article>
           <article><span className="metric-icon red">NS</span><div><small>NO SHOWS</small><strong>{selected.scheduled - selected.showed}</strong><p>{rate(selected.scheduled - selected.showed, selected.scheduled)} no-show rate</p></div></article>
+        </section>
+
+        <section className="call-detail-strip">
+          <div><small>{selected.center.toUpperCase()} CALL TIME</small><strong>{selectedCalls.totalHours.toFixed(1)} hours</strong><span>{selectedCalls.totalMinutes.toLocaleString()} minutes</span></div>
+          <div><small>AVERAGE CALL LENGTH</small><strong>{selectedCalls.avgMinutes.toFixed(2)} min</strong><span>across all calls</span></div>
+          <div><small>OUTBOUND EFFORT</small><strong>{selectedCalls.outboundCalls.toLocaleString()}</strong><span>{pct(selectedCalls.outboundCalls, selectedCalls.totalCalls).toFixed(1)}% of calls</span></div>
+          <div><small>FOLLOW-UP SIGNALS</small><strong>{(selectedCalls.missedCalls + selectedCalls.voicemails).toLocaleString()}</strong><span>{selectedCalls.missedCalls} missed · {selectedCalls.voicemails} voicemail</span></div>
         </section>
 
         <section className="analysis-grid">
@@ -181,7 +231,7 @@ export default function Home() {
           </div>
         </section>
 
-        <footer>Source: July Trial Performance Reports · Brick, Mount Laurel, Voorhees, and Turnersville <span>Dashboard updated July 28, 2026</span></footer>
+        <footer>Sources: July Trial Performance Reports and Calls by Softphone User <span>Dashboard updated July 28, 2026</span></footer>
       </div>
     </main>
   );
