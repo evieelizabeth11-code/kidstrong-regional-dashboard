@@ -31,7 +31,7 @@ export default function Home() {
         </div>
         <div className="date-lockup">
           <span className="calendar-icon">27</span>
-          <div><small>REPORTING WINDOW</small><strong>July 1 – July 27</strong></div>
+          <div><small>REPORTING WINDOW</small><strong>July 1 – July 28</strong></div>
         </div>
       </header>
 
@@ -81,7 +81,7 @@ export default function Home() {
           })}
         </section>
 
-        <footer>Sources: July Trial Performance Reports and Calls by Softphone User <span>Dashboard updated July 28, 2026</span></footer>
+        <footer>Sources: July Trial Performance Reports and Calls by Softphone User <span>Dashboard updated July 29, 2026</span></footer>
       </div>
     </main>
   );

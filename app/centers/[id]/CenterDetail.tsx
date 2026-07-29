@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { callData } from "../../call-data";
 import { callPersonData } from "../../call-person-data";
+import { yesterdayCalls, yesterdayTrials } from "../../daily-data";
 import { membershipData } from "../../membership-data";
 import { reports } from "../../trial-data";
 import { teamTrialData } from "../../team-trial-data";
@@ -23,14 +24,16 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const people = callPersonData.filter((item) => item.center === selected.center && item.totalMinutes > 0);
   const teamTrials = teamTrialData.filter((item) => item.center === selected.center);
   const membership = membershipData.find((item) => item.center === selected.center);
+  const yesterdayCall = yesterdayCalls.find((item) => item.center === selected.center);
+  const yesterdayTrial = yesterdayTrials.find((item) => item.center === selected.center);
   const namedMinutes = people.reduce((sum, item) => sum + item.totalMinutes, 0);
   const sharedMinutes = Math.max(0, selectedCalls.totalMinutes - namedMinutes);
   const callGoalPct = pct(selectedCalls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
   const signupGoalPct = membership ? pct(membership.signups.current, membership.signups.goal) : 0;
-  const expectedSignups = membership ? membership.signups.goal * (27 / 31) : 0;
+  const expectedSignups = membership ? membership.signups.goal * (28 / 31) : 0;
   const paceLabel = membership ? (membership.signups.current >= membership.signups.goal ? "Goal exceeded" : membership.signups.current >= expectedSignups - 1 ? "On pace" : "Behind pace") : "";
   const currentActivePaying = membership ? membership.totalMembers - membership.holds.total - membership.pastDue : 0;
-  const projectedSignups = membership ? Math.round((membership.signups.current / 27) * 31) : 0;
+  const projectedSignups = membership ? Math.round((membership.signups.current / 28) * 31) : 0;
   const projectedAdditionalSignups = membership ? Math.max(0, projectedSignups - membership.signups.current) : 0;
   const noSignupEomActive = membership ? currentActivePaying - membership.drops.pending : 0;
   const goalEomActive = membership ? noSignupEomActive + Math.max(0, membership.signups.goal - membership.signups.current) : 0;
@@ -58,7 +61,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
       <header className="navy-header">
         <Link href="/" className="wordmark"><span className="shield">K</span><div><strong>KIDSTRONG</strong><small>REGIONAL PERFORMANCE</small></div></Link>
         <div className="header-title"><span>{sectionTitle}</span><strong>{selected.center.toUpperCase()}</strong></div>
-        <div className="date-lockup"><span className="calendar-icon">27</span><div><small>REPORTING WINDOW</small><strong>July 1 – July 27</strong></div></div>
+        <div className="date-lockup"><span className="calendar-icon">28</span><div><small>REPORTING WINDOW</small><strong>July 1 – July 28</strong></div></div>
       </header>
 
       <div className="page-shell">
@@ -81,6 +84,18 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           <section className="overview-primary-kpis">
             <article><small>CENTER SHOW RATE</small><strong>{rate(selected.showed, selected.scheduled)}</strong><span>{selected.showed} of {selected.scheduled} trials showed</span></article>
             <article><small>CENTER CLOSE RATE</small><strong>{rate(selected.closed, selected.showed)}</strong><span>{selected.closed} of {selected.showed} shown trials closed</span></article>
+          </section>
+
+          <section className="yesterday-snapshot">
+            <div className="snapshot-heading"><div><small>YESTERDAY&apos;S SNAPSHOT</small><strong>Tuesday, July 28</strong></div><span>Included in month-to-date totals</span></div>
+            <div className="snapshot-grid">
+              <article><small>CALL TIME</small><strong>{yesterdayCall?.totalMinutes.toFixed(1) ?? "—"} <em>min</em></strong><span>{yesterdayCall?.totalCalls ?? 0} calls · {yesterdayCall?.outboundCalls ?? 0} outbound</span></article>
+              <article><small>CALL FOLLOW-UP</small><strong>{(yesterdayCall?.missedCalls ?? 0) + (yesterdayCall?.voicemails ?? 0)}</strong><span>{yesterdayCall?.missedCalls ?? 0} missed · {yesterdayCall?.voicemails ?? 0} voicemail</span></article>
+              {yesterdayTrial ? <>
+                <article><small>TRIAL SHOW RATE</small><strong>{rate(yesterdayTrial.showed, yesterdayTrial.scheduled)}</strong><span>{yesterdayTrial.showed} of {yesterdayTrial.scheduled} showed</span></article>
+                <article><small>TRIAL CLOSE RATE</small><strong>{rate(yesterdayTrial.closed, yesterdayTrial.showed)}</strong><span>{yesterdayTrial.closed} of {yesterdayTrial.showed} closed</span></article>
+              </> : <article className="snapshot-awaiting"><small>TRIAL SNAPSHOT</small><strong>Awaiting update</strong><span>July 28 trial results have not been added yet</span></article>}
+            </div>
           </section>
 
           <section className="center-section-cards">
@@ -143,7 +158,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             <span>−</span><article><small>PAST DUE</small><strong>{membership.pastDue}</strong></article>
             <span>=</span><article className="active-paying-now"><small>CURRENT ACTIVE PAYING</small><strong>{currentActivePaying}</strong></article>
           </div>
-          <div className="membership-pace"><div><small>MONTHLY SIGN-UP PACE</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected by July 27</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
+          <div className="membership-pace"><div><small>MONTHLY SIGN-UP PACE</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected by July 28</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
           <div className="membership-scenarios">
             <article className="eom-forecast no-signups"><small>IF NO ONE ELSE SIGNS UP</small><strong>{noSignupEomActive}</strong><span>{currentActivePaying} current − {membership.drops.pending} pending drops</span></article>
             <article className="eom-forecast goal-scenario"><small>IF THE SIGN-UP GOAL IS HIT</small><strong>{goalEomActive}</strong><span>{noSignupEomActive} after drops + {Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups needed</span></article>
@@ -167,7 +182,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         </section>}
         {section === "membership" && !membership && <section className="empty-state"><strong>Membership data is coming soon.</strong><span>This center will populate when its membership report is added.</span></section>}
 
-        <footer>Sources: July Trial Performance Report and Calls by Softphone User <span>Dashboard updated July 28, 2026</span></footer>
+        <footer>Sources: July Trial Performance Report and Calls by Softphone User <span>Dashboard updated July 29, 2026</span></footer>
       </div>
     </main>
   );
