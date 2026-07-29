@@ -32,6 +32,7 @@ export const yesterdayCalls: DailyCalls[] = [
 
 export const yesterdayTrials: DailyTrials[] = [
   { center: "Brick", scheduled: 6, showed: 2, closed: 0 },
+  { center: "Mount Laurel", scheduled: 2, showed: 2, closed: 2 },
 ];
 
 export const yesterdayPersonCalls: DailyPersonCalls[] = [
