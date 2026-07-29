@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { callData } from "../../call-data";
 import { callPersonData } from "../../call-person-data";
-import { yesterdayCalls, yesterdayTrials } from "../../daily-data";
+import { yesterdayCalls, yesterdayPersonCalls, yesterdayTrials } from "../../daily-data";
 import { membershipData } from "../../membership-data";
 import { reports } from "../../trial-data";
 import { teamTrialData } from "../../team-trial-data";
@@ -26,6 +26,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const membership = membershipData.find((item) => item.center === selected.center);
   const yesterdayCall = yesterdayCalls.find((item) => item.center === selected.center);
   const yesterdayTrial = yesterdayTrials.find((item) => item.center === selected.center);
+  const yesterdayPeople = yesterdayPersonCalls.filter((item) => item.center === selected.center && item.totalMinutes > 0);
   const namedMinutes = people.reduce((sum, item) => sum + item.totalMinutes, 0);
   const sharedMinutes = Math.max(0, selectedCalls.totalMinutes - namedMinutes);
   const callGoalPct = pct(selectedCalls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
@@ -89,12 +90,14 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           <section className="yesterday-snapshot">
             <div className="snapshot-heading"><div><small>YESTERDAY&apos;S SNAPSHOT</small><strong>Tuesday, July 28</strong></div><span>Included in month-to-date totals</span></div>
             <div className="snapshot-grid">
-              <article><small>CALL TIME</small><strong>{yesterdayCall?.totalMinutes.toFixed(1) ?? "—"} <em>min</em></strong><span>{yesterdayCall?.totalCalls ?? 0} calls · {yesterdayCall?.outboundCalls ?? 0} outbound</span></article>
-              <article><small>CALL FOLLOW-UP</small><strong>{(yesterdayCall?.missedCalls ?? 0) + (yesterdayCall?.voicemails ?? 0)}</strong><span>{yesterdayCall?.missedCalls ?? 0} missed · {yesterdayCall?.voicemails ?? 0} voicemail</span></article>
-              {yesterdayTrial ? <>
-                <article><small>TRIAL SHOW RATE</small><strong>{rate(yesterdayTrial.showed, yesterdayTrial.scheduled)}</strong><span>{yesterdayTrial.showed} of {yesterdayTrial.scheduled} showed</span></article>
-                <article><small>TRIAL CLOSE RATE</small><strong>{rate(yesterdayTrial.closed, yesterdayTrial.showed)}</strong><span>{yesterdayTrial.closed} of {yesterdayTrial.showed} closed</span></article>
-              </> : <article className="snapshot-awaiting"><small>TRIAL SNAPSHOT</small><strong>Awaiting update</strong><span>July 28 trial results have not been added yet</span></article>}
+              <article><small>TRIALS SCHEDULED</small><strong>{yesterdayTrial?.scheduled ?? "—"}</strong><span>{yesterdayTrial ? "yesterday's trial volume" : "awaiting July 28 results"}</span></article>
+              <article><small>TRIALS SHOWED</small><strong>{yesterdayTrial?.showed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.showed, yesterdayTrial.scheduled)} show rate` : "awaiting July 28 results"}</span></article>
+              <article><small>TRIALS SIGNED</small><strong>{yesterdayTrial?.closed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.closed, yesterdayTrial.showed)} close rate` : "awaiting July 28 results"}</span></article>
+              <article><small>TOTAL TALK TIME</small><strong>{yesterdayCall?.totalMinutes.toFixed(1) ?? "—"} <em>min</em></strong><span>{yesterdayCall?.totalCalls ?? 0} calls · {yesterdayCall?.outboundCalls ?? 0} outbound</span></article>
+            </div>
+            <div className="snapshot-people">
+              <div><small>TALK TIME BY PERSON</small><span>Users with recorded talk time</span></div>
+              <div className="snapshot-person-list">{yesterdayPeople.map((person) => <article key={person.person}><strong>{person.person}</strong><span>{person.totalMinutes.toFixed(1)} min</span><i><b style={{ width: `${Math.min(pct(person.totalMinutes, yesterdayCall?.totalMinutes ?? 0), 100)}%` }} /></i><small>{person.totalCalls} calls</small></article>)}</div>
             </div>
           </section>
 
