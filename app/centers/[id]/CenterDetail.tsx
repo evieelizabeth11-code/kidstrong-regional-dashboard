@@ -14,6 +14,7 @@ const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0)
 const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
 const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor" : "attention");
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
+const DAYS_REMAINING = 3;
 const MEMBERSHIP_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
 type Section = "overview" | "trials" | "calls" | "membership";
 
@@ -70,16 +71,20 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const goalAchieved = membership ? membership.signups.current >= membership.signups.goal : false;
   const paceLabel = membership ? (goalAchieved ? "Goal crushed" : membership.signups.current >= expectedSignups - 1 ? "On pace" : "Behind pace") : "";
   const currentActivePaying = membership ? membership.totalMembers - membership.holds.total - membership.pastDue : 0;
+  const holdsStarting = membership?.holds.starting ?? 0;
+  const holdsLifting = membership?.holds.lifting ?? 0;
   const projectedSignups = membership ? Math.round((membership.signups.current / 28) * 31) : 0;
   const projectedAdditionalSignups = membership ? Math.max(0, projectedSignups - membership.signups.current) : 0;
-  const noSignupEomActive = membership ? currentActivePaying - membership.drops.pending : 0;
+  const noSignupEomActive = membership ? currentActivePaying - holdsStarting + holdsLifting - membership.drops.pending : 0;
   const goalEomActive = membership ? noSignupEomActive + Math.max(0, membership.signups.goal - membership.signups.current) : 0;
-  const projectedEomActive = membership ? currentActivePaying + projectedAdditionalSignups - membership.drops.pending : 0;
+  const projectedEomActive = membership ? noSignupEomActive + projectedAdditionalSignups : 0;
   const signupsNeeded = membership ? Math.max(0, membership.signups.goal - membership.signups.current) : 0;
   const stretchGoal = membership ? Math.ceil((membership.signups.current + 1) / 5) * 5 : 0;
   const stretchRemaining = membership ? Math.max(0, stretchGoal - membership.signups.current) : 0;
   const stretchEomActive = membership ? noSignupEomActive + stretchRemaining : 0;
   const netVsBomAfterDrops = membership ? noSignupEomActive - membership.bomApm : 0;
+  const targetRemaining = goalAchieved ? stretchRemaining : signupsNeeded;
+  const signupsPerDay = targetRemaining / DAYS_REMAINING;
   const centerCloseRate = pct(selected.closed, selected.showed) / 100;
   const centerShowRate = pct(selected.showed, selected.scheduled) / 100;
   const showsNeeded = centerCloseRate ? Math.ceil(signupsNeeded / centerCloseRate) : 0;
@@ -203,22 +208,23 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           </div>
           {goalAchieved && <section className="membership-victory">
             <div className="victory-badge"><span>★</span><div><small>MONTHLY GOAL ACHIEVED</small><strong>{membership.signups.current} sign-ups</strong><p>{membership.signups.current - membership.signups.goal} above the {membership.signups.goal}-signup goal</p></div></div>
-            <div className="victory-target"><small>NEXT MILESTONE</small><strong>{stretchGoal}</strong><span>{stretchRemaining} more sign-up{stretchRemaining === 1 ? "" : "s"} to unlock it</span><i><b style={{ width: `${pct(membership.signups.current, stretchGoal)}%` }} /></i></div>
-            <div className="victory-protect"><small>PROTECT THE WIN</small><strong>{noSignupEomActive} projected APM</strong><span>after {membership.drops.pending} pending drops · <b>{netVsBomAfterDrops >= 0 ? "+" : ""}{netVsBomAfterDrops} vs. BOM</b></span></div>
+            <div className="victory-target"><small>NEXT MILESTONE</small><strong>{stretchGoal}</strong><span>{stretchRemaining} more sign-up{stretchRemaining === 1 ? "" : "s"} · {signupsPerDay.toFixed(1)} per day</span><i><b style={{ width: `${pct(membership.signups.current, stretchGoal)}%` }} /></i></div>
+            <div className="victory-protect"><small>PROTECT THE WIN</small><strong>{noSignupEomActive} projected APM</strong><span>−{holdsStarting} holds starting +{holdsLifting} lifting −{membership.drops.pending} pending drops · <b>{netVsBomAfterDrops >= 0 ? "+" : ""}{netVsBomAfterDrops} vs. BOM</b></span></div>
           </section>}
           <div className="membership-pace"><div><small>MONTHLY SIGN-UP PACE</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected by July 28</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{goalAchieved ? `${stretchRemaining} to the ${stretchGoal} stretch milestone` : `${Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining`}</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
           <div className="membership-scenarios">
-            <article className="eom-forecast no-signups"><small>IF NO ONE ELSE SIGNS UP</small><strong>{noSignupEomActive}</strong><span>{currentActivePaying} current − {membership.drops.pending} pending drops</span></article>
-            <article className="eom-forecast goal-scenario"><small>{goalAchieved ? `IF THE ${stretchGoal} MILESTONE IS HIT` : "IF THE SIGN-UP GOAL IS HIT"}</small><strong>{goalAchieved ? stretchEomActive : goalEomActive}</strong><span>{noSignupEomActive} after drops + {goalAchieved ? stretchRemaining : Math.max(0, membership.signups.goal - membership.signups.current)} more sign-ups</span></article>
-            <article className="eom-forecast pace-scenario"><small>AT CURRENT SIGN-UP PACE</small><strong>{projectedEomActive}</strong><span>{currentActivePaying} current + {projectedAdditionalSignups} projected new − {membership.drops.pending} pending drops</span></article>
+            <article className="eom-forecast no-signups"><small>IF NO ONE ELSE SIGNS UP</small><strong>{noSignupEomActive}</strong><span>{currentActivePaying} current − {holdsStarting} holds starting + {holdsLifting} lifting − {membership.drops.pending} pending drops</span></article>
+            <article className="eom-forecast goal-scenario"><small>{goalAchieved ? `IF THE ${stretchGoal} MILESTONE IS HIT` : "IF THE SIGN-UP GOAL IS HIT"}</small><strong>{goalAchieved ? stretchEomActive : goalEomActive}</strong><span>{noSignupEomActive} after scheduled changes + {targetRemaining} more sign-ups</span></article>
+            <article className="eom-forecast pace-scenario"><small>AT CURRENT SIGN-UP PACE</small><strong>{projectedEomActive}</strong><span>{noSignupEomActive} after scheduled changes + {projectedAdditionalSignups} projected sign-ups</span></article>
           </div>
           <div className="membership-forecast-grid">
             <article className="trial-funnel-needed">
-              <small>WHAT IT TAKES TO HIT {membership.signups.goal} SIGN-UPS</small>
+              <small>WHAT IT TAKES TO HIT {goalAchieved ? stretchGoal : membership.signups.goal} SIGN-UPS</small>
               {signupsNeeded > 0 ? <>
                 <div><b>{scheduledNeeded}</b><span>more trials<br />scheduled</span><em>→</em><b>{showsNeeded}</b><span>need to<br />show</span><em>→</em><b>{signupsNeeded}</b><span>need to<br />sign up</span></div>
                 <p>Based on the current {rate(selected.showed, selected.scheduled)} show rate and {rate(selected.closed, selected.showed)} close rate.</p>
-              </> : <div className="goal-achieved"><b>★</b><span>Original goal crushed<br /><strong>Next milestone: {stretchGoal} · {stretchRemaining} more sign-ups</strong></span></div>}
+              </> : <div className="goal-achieved"><b>★</b><span>Original goal crushed<br /><strong>Next milestone: {stretchGoal} · {stretchRemaining} more · {signupsPerDay.toFixed(1)} per day</strong></span></div>}
+              <p className="daily-pace-note"><strong>{signupsPerDay.toFixed(1)} sign-ups per day</strong> needed over the final {DAYS_REMAINING} days to reach {goalAchieved ? `the ${stretchGoal} stretch milestone` : "goal"}.</p>
             </article>
           </div>
           <div className="membership-grid">
