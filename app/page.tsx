@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { callData } from "./call-data";
+import RegionalLeaderboard from "./RegionalLeaderboard";
 import { reports } from "./trial-data";
 
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
@@ -50,6 +51,8 @@ export default function Home() {
           <article><small>TRIALS CLOSED</small><div className="regional-value-pair"><strong>{totals.closed}</strong><em>{rate(totals.closed, totals.showed)}</em></div><span>regional close rate</span></article>
           <article><small>CALL TIME</small><div className="regional-value-pair"><strong>{totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><em>{pct(totalMinutes, 12000).toFixed(1)}%</em></div><span>of 12,000 regional minutes</span></article>
         </section>
+
+        <RegionalLeaderboard />
 
         <section className="overview-section-head">
           <div><p className="kicker">CENTER SCORECARDS</p><h2>Select a center to explore</h2></div>
