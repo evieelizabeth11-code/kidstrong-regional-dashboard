@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { callData } from "../../call-data";
 import { callPersonData } from "../../call-person-data";
 import { yesterdayCalls, yesterdayPersonCalls, yesterdayTrials } from "../../daily-data";
-import { membershipData } from "../../membership-data";
+import { membershipData, type CenterMembership } from "../../membership-data";
 import { reports } from "../../trial-data";
 import { teamTrialData } from "../../team-trial-data";
 
@@ -14,16 +14,51 @@ const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0)
 const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
 const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor" : "attention");
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
+const MEMBERSHIP_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
 type Section = "overview" | "trials" | "calls" | "membership";
 
 export default function CenterDetail({ centerId, section }: { centerId: string; section: Section }) {
   const [dayFilter, setDayFilter] = useState("All days");
   const [sort, setSort] = useState("day");
+  const [liveMembershipData, setLiveMembershipData] = useState<CenterMembership[]>(membershipData);
+
+  useEffect(() => {
+    const loadMembershipData = async () => {
+      try {
+        const response = await fetch(`${MEMBERSHIP_FEED_URL}&t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const rows = (await response.text()).trim().split(/\r?\n/).slice(1);
+        const updated = rows.map((row) => {
+          const values = row.split(",").map((value) => value.replace(/^"|"$/g, "").trim());
+          return {
+            center: values[0],
+            totalMembers: Number(values[1]),
+            bomApm: Number(values[2]),
+            holds: {
+              total: Number(values[3]),
+              scheduled: null,
+              starting: Number(values[4]),
+              lifting: Number(values[5]),
+            },
+            drops: { total: Number(values[6]), pending: Number(values[7]) },
+            signups: { current: Number(values[8]), goal: Number(values[9]) },
+            pastDue: Number(values[10]),
+          };
+        }).filter((item) => item.center && Number.isFinite(item.signups.current));
+        if (updated.length) setLiveMembershipData(updated);
+      } catch {
+        // Keep the last built-in snapshot when the published feed is unavailable.
+      }
+    };
+
+    loadMembershipData();
+  }, []);
+
   const selected = reports.find((report) => report.id === centerId) ?? reports[0];
   const selectedCalls = callData.find((item) => item.center === selected.center) ?? callData[0];
   const people = callPersonData.filter((item) => item.center === selected.center && item.totalMinutes > 0);
   const teamTrials = teamTrialData.filter((item) => item.center === selected.center);
-  const membership = membershipData.find((item) => item.center === selected.center);
+  const membership = liveMembershipData.find((item) => item.center === selected.center);
   const yesterdayCall = yesterdayCalls.find((item) => item.center === selected.center);
   const yesterdayTrial = yesterdayTrials.find((item) => item.center === selected.center);
   const yesterdayPeople = yesterdayPersonCalls.filter((item) => item.center === selected.center && item.totalMinutes > 0);
