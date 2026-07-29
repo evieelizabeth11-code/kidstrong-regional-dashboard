@@ -11,18 +11,18 @@ export async function generateMetadata(): Promise<Metadata> {
     "Compare trial performance and center call activity across Brick, Mount Laurel, Voorhees, and Turnersville.";
 
   return {
-    title: "KidStrong | Regional Trial Performance",
+    title: "KidStrong Regional Dashboard",
     description,
     openGraph: {
-      title: "Trial Performance Command Center",
+      title: "KidStrong Regional Dashboard",
       description,
-      images: [{ url: `${origin}/og.png`, width: 1733, height: 907, alt: "Classview dashboard preview" }],
+      images: [{ url: `${origin}/og-v2.png`, width: 1731, height: 909, alt: "KidStrong Regional Dashboard in navy and green" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Trial Performance Command Center",
+      title: "KidStrong Regional Dashboard",
       description,
-      images: [`${origin}/og.png`],
+      images: [`${origin}/og-v2.png`],
     },
   };
 }
