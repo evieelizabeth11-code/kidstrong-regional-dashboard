@@ -16,13 +16,13 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: "KidStrong Regional Dashboard",
       description,
-      images: [{ url: `${origin}/og-v2.png`, width: 1731, height: 909, alt: "KidStrong Regional Dashboard in navy and green" }],
+      images: [{ url: `${origin}/og-v3.png`, width: 1731, height: 909, alt: "KidStrong Regional Dashboard for Southern New Jersey and NJ/CT/NY/DE/MD" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "KidStrong Regional Dashboard",
       description,
-      images: [`${origin}/og-v2.png`],
+      images: [`${origin}/og-v3.png`],
     },
   };
 }
