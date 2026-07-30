@@ -24,6 +24,7 @@ const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor
 const progressTone = (value: number) =>
   value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
+const CALL_PUSH_GOALS = [3500, 4000];
 const DAYS_REMAINING = 2;
 const MEMBERSHIP_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
 type Section = "overview" | "trials" | "calls" | "membership";
@@ -153,6 +154,8 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const namedMinutes = people.reduce((sum, item) => sum + item.totalMinutes, 0);
   const sharedMinutes = Math.max(0, selectedCalls.totalMinutes - namedMinutes);
   const callGoalPct = pct(selectedCalls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
+  const nextCallTarget = [MONTHLY_CALL_MINUTE_GOAL, ...CALL_PUSH_GOALS].find((goal) => goal > selectedCalls.totalMinutes)
+    ?? Math.ceil((selectedCalls.totalMinutes + 1) / 500) * 500;
   const signupGoalPct = membership ? pct(membership.signups.current, membership.signups.goal) : 0;
   const expectedSignups = membership ? membership.signups.goal * (29 / 31) : 0;
   const goalAchieved = membership ? membership.signups.current >= membership.signups.goal : false;
@@ -255,7 +258,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
               <div><small>TRIALS</small><strong>{selected.scheduled} scheduled</strong><span>{selected.closed} closed</span></div><b>View trial details →</b>
             </Link>
             <Link href={`/centers/${centerId}/calls`} className={`center-section-card ${progressTone(callGoalPct)}`}>
-              <div><small>CALLS</small><strong>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} minutes</strong><span>{callGoalPct.toFixed(1)}% of 3,000-minute goal</span></div><i><em style={{ width: `${Math.min(callGoalPct, 100)}%` }} /></i><b>View call details →</b>
+              <div><small>CALLS</small><strong>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} minutes</strong><span>{callGoalPct.toFixed(1)}% of goal · {Math.max(0, nextCallTarget - selectedCalls.totalMinutes).toLocaleString(undefined, { maximumFractionDigits: 0 })} to {nextCallTarget.toLocaleString()}</span></div><i><em style={{ width: `${Math.min(callGoalPct, 100)}%` }} /></i><b>View call details →</b>
             </Link>
             <Link href={`/centers/${centerId}/membership`} className={`center-section-card ${!membership ? "unavailable" : ""}`}>
               <div><small>MEMBERSHIP</small><strong>{membership ? `${membership.signups.current} of ${membership.signups.goal} sign-ups` : "Data coming soon"}</strong><span>{membership ? `${signupGoalPct.toFixed(1)}% of monthly goal · ${paceLabel}` : "Membership health has not been added yet"}</span></div>{membership && <i><em style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i>}<b>{membership ? "View membership details →" : "Awaiting data"}</b>
@@ -288,7 +291,21 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         </>}
 
         {section === "calls" && <>
-          <section className={`call-goal-hero ${progressTone(callGoalPct)}`}><div><small>{callGoalPct > 100 ? "MONTHLY GOAL SURPASSED ★" : callGoalPct >= 100 ? "MONTHLY GOAL HIT ✓" : "MONTHLY CALL-TIME GOAL"}</small><strong>{callGoalPct.toFixed(1)}%</strong><span>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} of 3,000 minutes · {callGoalPct >= 100 ? `${(selectedCalls.totalMinutes - MONTHLY_CALL_MINUTE_GOAL).toLocaleString(undefined, { maximumFractionDigits: 0 })} above goal` : `${(MONTHLY_CALL_MINUTE_GOAL - selectedCalls.totalMinutes).toLocaleString(undefined, { maximumFractionDigits: 0 })} remaining`}</span></div><i><b style={{ width: `${Math.min(callGoalPct, 100)}%` }} /></i></section>
+          <section className={`call-goal-hero ${progressTone(callGoalPct)}`}><div><small>{callGoalPct > 100 ? "MONTHLY GOAL SURPASSED ★" : callGoalPct >= 100 ? "MONTHLY GOAL HIT ✓" : "MONTHLY CALL-TIME GOAL"}</small><strong>{callGoalPct.toFixed(1)}%</strong><span>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} minutes · {Math.max(0, nextCallTarget - selectedCalls.totalMinutes).toLocaleString(undefined, { maximumFractionDigits: 0 })} remaining to the {nextCallTarget.toLocaleString()}-minute milestone</span></div><i><b style={{ width: `${Math.min(callGoalPct, 100)}%` }} /></i></section>
+          <section className="signup-milestones call-milestones" aria-label="Talk-time milestone ladder">
+            {[
+              { goal: MONTHLY_CALL_MINUTE_GOAL, label: "ORIGINAL GOAL", tone: "original" },
+              { goal: CALL_PUSH_GOALS[0], label: "PUSH GOAL", tone: "push" },
+              { goal: CALL_PUSH_GOALS[1], label: "NEXT LEVEL", tone: "next" },
+            ].map((milestone, index) => {
+              const earned = selectedCalls.totalMinutes >= milestone.goal;
+              const remaining = Math.max(0, milestone.goal - selectedCalls.totalMinutes);
+              return <article className={`milestone-star ${milestone.tone} ${earned ? "earned" : "upcoming"} ${index === 0 ? "primary" : ""}`} key={milestone.goal}>
+                <span>★</span>
+                <div><small>{earned ? `${milestone.label} ACHIEVED` : milestone.label}</small><strong>{milestone.goal.toLocaleString()} <em>min</em></strong><p>{earned ? `${(selectedCalls.totalMinutes - milestone.goal).toLocaleString(undefined, { maximumFractionDigits: 0 })} minutes above milestone` : `${remaining.toLocaleString(undefined, { maximumFractionDigits: 0 })} minutes to earn`}</p></div>
+              </article>;
+            })}
+          </section>
           <section className="call-detail-strip">
             <div><small>TOTAL CALL TIME</small><strong>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</strong><span>{selectedCalls.totalHours.toFixed(1)} hours</span></div>
             <div><small>AVERAGE CALL LENGTH</small><strong>{selectedCalls.avgMinutes.toFixed(2)} min</strong><span>across {selectedCalls.totalCalls.toLocaleString()} calls</span></div>

@@ -12,6 +12,7 @@ const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
 const progressTone = (value: number) =>
   value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
+const CALL_PUSH_GOALS = [3500, 4000];
 const DASHBOARD_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
 
 export default function Home() {
@@ -88,6 +89,8 @@ export default function Home() {
           {liveReports.map((report) => {
             const calls = liveCallData.find((item) => item.center === report.center) ?? liveCallData[0];
             const callProgress = pct(calls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
+            const nextCallTarget = [MONTHLY_CALL_MINUTE_GOAL, ...CALL_PUSH_GOALS].find((goal) => goal > calls.totalMinutes)
+              ?? Math.ceil((calls.totalMinutes + 1) / 500) * 500;
             return (
               <Link className="overview-center-card" href={`/centers/${report.id}`} key={report.id}>
                 <div className="overview-card-top">
@@ -102,7 +105,7 @@ export default function Home() {
                 <div className={`overview-call-goal ${progressTone(callProgress)}`}>
                   <div><span>{callProgress > 100 ? "GOAL SURPASSED ★" : callProgress >= 100 ? "GOAL HIT ✓" : "CALL-TIME GOAL"}</span><strong>{callProgress.toFixed(1)}%</strong></div>
                   <i><b style={{ width: `${Math.min(callProgress, 100)}%` }} /></i>
-                  <small>{calls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} of 3,000 minutes</small>
+                  <small>{calls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} minutes · {Math.max(0, nextCallTarget - calls.totalMinutes).toLocaleString(undefined, { maximumFractionDigits: 0 })} to {nextCallTarget.toLocaleString()} milestone</small>
                 </div>
               </Link>
             );
