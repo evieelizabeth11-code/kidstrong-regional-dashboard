@@ -10,6 +10,7 @@ import {
   yesterdayTrials,
   type DailyCalls,
   type DailyPersonCalls,
+  type DailyTrials,
 } from "../../daily-data";
 import { membershipData, type CenterMembership } from "../../membership-data";
 import { reports } from "../../trial-data";
@@ -31,6 +32,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const [liveCallData, setLiveCallData] = useState(callData);
   const [liveYesterdayCalls, setLiveYesterdayCalls] = useState<DailyCalls[]>(yesterdayCalls);
   const [liveYesterdayPeople, setLiveYesterdayPeople] = useState<DailyPersonCalls[]>(yesterdayPersonCalls);
+  const [liveYesterdayTrials, setLiveYesterdayTrials] = useState<DailyTrials[]>(yesterdayTrials);
   const [snapshotDate, setSnapshotDate] = useState("Tuesday, July 28");
 
   useEffect(() => {
@@ -42,6 +44,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         setLiveCallData(mergeCallFeedRows(callData, rows));
         const dailyCalls: DailyCalls[] = [];
         const dailyPeople: DailyPersonCalls[] = [];
+        const dailyTrials: DailyTrials[] = [];
         let latestSnapshotSerial = 0;
         const updated = rows.map((row) => {
           const values = row.split(",").map((value) => value.replace(/^"|"$/g, "").trim());
@@ -73,6 +76,15 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
               }
             });
           }
+          const [, trialScheduled, trialShowed, trialClosed] = (values[27] ?? "").split("~");
+          if (values[0] && trialScheduled !== undefined) {
+            dailyTrials.push({
+              center: values[0],
+              scheduled: Number(trialScheduled) || 0,
+              showed: Number(trialShowed) || 0,
+              closed: Number(trialClosed) || 0,
+            });
+          }
           return {
             center: values[0],
             totalMembers: Number(values[1]),
@@ -97,6 +109,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         if (updated.length) setLiveMembershipData(updated);
         if (dailyCalls.length) setLiveYesterdayCalls(dailyCalls);
         if (dailyPeople.length) setLiveYesterdayPeople(dailyPeople);
+        if (dailyTrials.length) setLiveYesterdayTrials(dailyTrials);
         if (latestSnapshotSerial) {
           const snapshot = new Date(Date.UTC(1899, 11, 30) + latestSnapshotSerial * 86400000);
           setSnapshotDate(snapshot.toLocaleDateString("en-US", {
@@ -120,7 +133,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const teamTrials = teamTrialData.filter((item) => item.center === selected.center);
   const membership = liveMembershipData.find((item) => item.center === selected.center);
   const yesterdayCall = liveYesterdayCalls.find((item) => item.center === selected.center);
-  const yesterdayTrial = yesterdayTrials.find((item) => item.center === selected.center);
+  const yesterdayTrial = liveYesterdayTrials.find((item) => item.center === selected.center);
   const yesterdayPeople = liveYesterdayPeople
     .filter((item) => item.center === selected.center && item.totalMinutes > 0)
     .sort((a, b) => b.totalMinutes - a.totalMinutes);
