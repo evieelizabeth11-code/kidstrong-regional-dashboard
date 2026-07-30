@@ -332,11 +332,14 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
               <article><div><small>NON-TRIAL SIGN-UPS</small><span>Signed without a trial</span></div><strong>{membership.signups.nonTrial}</strong></article>
             </div>
           </div>
-          <div className="membership-scenarios">
-            <article className="eom-forecast no-signups"><small>IF NO ONE ELSE SIGNS UP</small><strong>{noSignupEomActive}</strong><span>{currentActivePaying} current − {holdsStarting} holds starting + {holdsLifting} lifting − {membership.drops.pending} pending drops</span></article>
-            <article className="eom-forecast goal-scenario"><small>{goalAchieved ? `IF THE ${stretchGoal} MILESTONE IS HIT` : "IF THE SIGN-UP GOAL IS HIT"}</small><strong>{goalAchieved ? stretchEomActive : goalEomActive}</strong><span>{noSignupEomActive} after scheduled changes + {targetRemaining} more sign-ups</span></article>
-            <article className="eom-forecast pace-scenario"><small>AT CURRENT SIGN-UP PACE</small><strong>{projectedEomActive}</strong><span>{noSignupEomActive} after scheduled changes + {projectedAdditionalSignups} projected sign-ups</span></article>
-          </div>
+          <section className="scenario-section">
+            <div className="scenario-heading"><div><small>END-OF-MONTH OUTLOOK</small><strong>Projected active-paying members</strong></div><span>Three clear outcomes based on the final two days</span></div>
+            <div className="membership-scenarios">
+              <article className="eom-forecast no-signups"><div className="scenario-label"><i>↓</i><div><small>FLOOR</small><b>NO MORE SIGN-UPS</b></div></div><strong>{noSignupEomActive}</strong><em>PROJECTED APM</em><span>{currentActivePaying} today → scheduled holds and drops applied</span></article>
+              <article className="eom-forecast goal-scenario"><div className="scenario-label"><i>★</i><div><small>TARGET</small><b>{goalAchieved ? `REACH ${stretchGoal} SIGN-UPS` : "HIT THE SIGN-UP GOAL"}</b></div></div><strong>{goalAchieved ? stretchEomActive : goalEomActive}</strong><em>PROJECTED APM</em><span>{noSignupEomActive} floor + {targetRemaining} additional sign-up{targetRemaining === 1 ? "" : "s"}</span></article>
+              <article className="eom-forecast pace-scenario"><div className="scenario-label"><i>→</i><div><small>FORECAST</small><b>CURRENT SIGN-UP PACE</b></div></div><strong>{projectedEomActive}</strong><em>PROJECTED APM</em><span>{noSignupEomActive} floor + {projectedAdditionalSignups} projected sign-up{projectedAdditionalSignups === 1 ? "" : "s"}</span><mark>LIKELY OUTCOME</mark></article>
+            </div>
+          </section>
           <div className="membership-forecast-grid">
             <article className="trial-funnel-needed">
               <small>WHAT IT TAKES TO HIT {goalAchieved ? stretchGoal : membership.signups.goal} SIGN-UPS</small>
