@@ -696,6 +696,7 @@ footer { font-size:11px; }
   .navy-header.brandless-header { grid-template-columns:1fr; }
   .brandless-header .header-title { text-align:center; }
   .reporting-period-area { justify-items:center; }
+  .overview-center-grid { grid-template-columns:1fr; }
   .reporting-period-nav>div { display:none; }
   .history-hero { grid-template-columns:1fr;align-items:start; }
   .history-hero label { min-width:0; }
