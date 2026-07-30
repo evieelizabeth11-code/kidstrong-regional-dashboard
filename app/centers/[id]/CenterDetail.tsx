@@ -90,7 +90,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         if (!latestRecords.length) return;
 
         const centerTotals = new Map<string, DailyCalls>();
-        const peopleRows: DailyPersonCalls[] = [];
+        const peopleTotals = new Map<string, DailyPersonCalls>();
         latestRecords.forEach((values) => {
           const center = values[1];
           const totalCalls = Number(values[3]) || 0;
@@ -113,11 +113,17 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           current.voicemails += Number(values[8]) || 0;
           current.totalMinutes += totalMinutes;
           centerTotals.set(center, current);
-          if (totalMinutes > 0) peopleRows.push({ center, person: values[2], totalCalls, totalMinutes });
+          if (totalMinutes > 0) {
+            const personKey = `${center}::${values[2]}`;
+            const person = peopleTotals.get(personKey) ?? { center, person: values[2], totalCalls: 0, totalMinutes: 0 };
+            person.totalCalls += totalCalls;
+            person.totalMinutes += totalMinutes;
+            peopleTotals.set(personKey, person);
+          }
         });
 
         setLiveYesterdayCalls(Array.from(centerTotals.values()));
-        setLiveYesterdayPeople(peopleRows);
+        setLiveYesterdayPeople(Array.from(peopleTotals.values()));
         setSnapshotDate(new Date(`${latestDate}T12:00:00`).toLocaleDateString("en-US", {
           weekday: "long",
           month: "long",
