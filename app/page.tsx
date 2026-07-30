@@ -89,6 +89,11 @@ export default function Home() {
           </div>
         </section>
 
+        <nav className="center-quick-nav" aria-label="Jump to a center">
+          <div><small>JUMP TO A CENTER</small><span>Open a center without scrolling</span></div>
+          <div>{liveReports.map((report) => <Link href={`/centers/${report.id}`} key={report.id}>{report.center}<b>→</b></Link>)}</div>
+        </nav>
+
         <section className="regional-totals" aria-label="Regional totals">
           <article><small>TRIALS SCHEDULED</small><strong>{totals.scheduled}</strong><span>across Southern New Jersey</span></article>
           <article><small>TRIALS SHOWED</small><div className="regional-value-pair"><strong>{totals.showed}</strong><em>{rate(totals.showed, totals.scheduled)}</em></div><span>regional show rate</span></article>
