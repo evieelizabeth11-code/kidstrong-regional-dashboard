@@ -166,10 +166,14 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const goalEomActive = membership ? noSignupEomActive + Math.max(0, membership.signups.goal - membership.signups.current) : 0;
   const projectedEomActive = membership ? noSignupEomActive + projectedAdditionalSignups : 0;
   const signupsNeeded = membership ? Math.max(0, membership.signups.goal - membership.signups.current) : 0;
-  const stretchGoal = membership ? Math.ceil((membership.signups.current + 1) / 5) * 5 : 0;
+  const firstPushGoal = membership ? Math.ceil(membership.signups.goal / 5) * 5 + 5 : 0;
+  const secondPushGoal = firstPushGoal + 5;
+  const stretchGoal = membership
+    ? [firstPushGoal, secondPushGoal].find((goal) => goal > membership.signups.current)
+      ?? Math.ceil((membership.signups.current + 1) / 5) * 5
+    : 0;
   const stretchRemaining = membership ? Math.max(0, stretchGoal - membership.signups.current) : 0;
   const stretchEomActive = membership ? noSignupEomActive + stretchRemaining : 0;
-  const netVsBomAfterDrops = membership ? noSignupEomActive - membership.bomApm : 0;
   const targetRemaining = goalAchieved ? stretchRemaining : signupsNeeded;
   const signupsPerDay = targetRemaining / DAYS_REMAINING;
   const centerCloseRate = pct(selected.closed, selected.showed) / 100;
@@ -306,12 +310,21 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             <span>−</span><article><small>PAST DUE</small><strong>{membership.pastDue}</strong></article>
             <span>=</span><article className="active-paying-now"><small>CURRENT ACTIVE PAYING</small><strong>{currentActivePaying}</strong></article>
           </div>
-          {goalAchieved && <section className="membership-victory">
-            <div className="victory-badge"><span>★</span><div><small>MONTHLY GOAL ACHIEVED</small><strong>{membership.signups.current} sign-ups</strong><p>{membership.signups.current - membership.signups.goal} above the {membership.signups.goal}-signup goal</p></div></div>
-            <div className="victory-target"><small>NEXT MILESTONE</small><strong>{stretchGoal}</strong><span>{stretchRemaining} more sign-up{stretchRemaining === 1 ? "" : "s"} · {signupsPerDay.toFixed(1)} per day</span><i><b style={{ width: `${pct(membership.signups.current, stretchGoal)}%` }} /></i></div>
-            <div className="victory-protect"><small>PROTECT THE WIN</small><strong>{noSignupEomActive} projected APM</strong><span>−{holdsStarting} holds starting +{holdsLifting} lifting −{membership.drops.pending} pending drops · <b>{netVsBomAfterDrops >= 0 ? "+" : ""}{netVsBomAfterDrops} vs. BOM</b></span></div>
-          </section>}
-          <div className="membership-pace"><div><small>MONTHLY SIGN-UP PACE</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected by July 28</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{goalAchieved ? `${stretchRemaining} to the ${stretchGoal} stretch milestone` : `${Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining`}</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
+          <div className={`membership-pace ${progressTone(signupGoalPct)}`}><div><small>{signupGoalPct > 100 ? "MONTHLY GOAL SURPASSED ★" : signupGoalPct >= 100 ? "MONTHLY GOAL HIT ✓" : "MONTHLY SIGN-UP PACE"}</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected by July 28</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{goalAchieved ? `${stretchRemaining} to the ${stretchGoal} stretch milestone` : `${Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining`}</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
+          <section className="signup-milestones" aria-label="Sign-up milestone ladder">
+            {[
+              { goal: membership.signups.goal, label: "ORIGINAL GOAL", tone: "original" },
+              { goal: firstPushGoal, label: "PUSH GOAL", tone: "push" },
+              { goal: secondPushGoal, label: "NEXT LEVEL", tone: "next" },
+            ].map((milestone, index) => {
+              const earned = membership.signups.current >= milestone.goal;
+              const remaining = Math.max(0, milestone.goal - membership.signups.current);
+              return <article className={`milestone-star ${milestone.tone} ${earned ? "earned" : "upcoming"} ${index === 0 ? "primary" : ""}`} key={milestone.goal}>
+                <span>★</span>
+                <div><small>{earned ? `${milestone.label} ACHIEVED` : milestone.label}</small><strong>{milestone.goal}</strong><p>{earned ? `${membership.signups.current - milestone.goal} above milestone` : `${remaining} more sign-up${remaining === 1 ? "" : "s"} to earn`}</p></div>
+              </article>;
+            })}
+          </section>
           <div className="signup-breakdown" aria-label="Month-to-date sign-up breakdown">
             <article className="signup-total"><small>TOTAL SIGN-UPS MTD</small><strong>{membership.signups.current}</strong><span>All new memberships</span></article>
             <span>=</span>
