@@ -1,13 +1,33 @@
+"use client";
+
 import Link from "next/link";
-import { callData } from "./call-data";
+import { useEffect, useState } from "react";
+import { callData, mergeCallFeedRows } from "./call-data";
 import RegionalLeaderboard from "./RegionalLeaderboard";
 import { reports } from "./trial-data";
 
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
 const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
+const DASHBOARD_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
 
 export default function Home() {
+  const [liveCallData, setLiveCallData] = useState(callData);
+
+  useEffect(() => {
+    const loadCalls = async () => {
+      try {
+        const response = await fetch(`${DASHBOARD_FEED_URL}&t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const rows = (await response.text()).trim().split(/\r?\n/).slice(1);
+        setLiveCallData(mergeCallFeedRows(callData, rows));
+      } catch {
+        // Keep the last built-in MTD totals when the live feed is unavailable.
+      }
+    };
+    loadCalls();
+  }, []);
+
   const totals = reports.reduce(
     (sum, report) => ({
       scheduled: sum.scheduled + report.scheduled,
@@ -16,8 +36,8 @@ export default function Home() {
     }),
     { scheduled: 0, showed: 0, closed: 0 },
   );
-  const totalMinutes = callData.reduce((sum, item) => sum + item.totalMinutes, 0);
-  const totalCalls = callData.reduce((sum, item) => sum + item.totalCalls, 0);
+  const totalMinutes = liveCallData.reduce((sum, item) => sum + item.totalMinutes, 0);
+  const totalCalls = liveCallData.reduce((sum, item) => sum + item.totalCalls, 0);
 
   return (
     <main className="overview-page">
@@ -61,7 +81,7 @@ export default function Home() {
 
         <section className="overview-center-grid">
           {reports.map((report) => {
-            const calls = callData.find((item) => item.center === report.center) ?? callData[0];
+            const calls = liveCallData.find((item) => item.center === report.center) ?? liveCallData[0];
             const callProgress = pct(calls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
             return (
               <Link className="overview-center-card" href={`/centers/${report.id}`} key={report.id}>

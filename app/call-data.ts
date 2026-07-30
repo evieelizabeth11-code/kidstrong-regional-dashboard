@@ -61,3 +61,31 @@ export const callData: CenterCalls[] = [
     avgMinutes: 1.46,
   },
 ];
+
+export function mergeCallFeedRows(base: CenterCalls[], rows: string[]): CenterCalls[] {
+  const additions = new Map(
+    rows.map((row) => {
+      const values = row.split(",").map((value) => value.replace(/^"|"$/g, "").trim());
+      return [values[0], values.slice(15, 22).map(Number)] as const;
+    }),
+  );
+
+  return base.map((item) => {
+    const added = additions.get(item.center);
+    if (!added || added.length < 7 || added.some((value) => !Number.isFinite(value))) return item;
+    const totalCalls = item.totalCalls + added[0];
+    const totalMinutes = item.totalMinutes + added[6];
+    return {
+      ...item,
+      totalCalls,
+      inboundCalls: item.inboundCalls + added[1],
+      outboundCalls: item.outboundCalls + added[2],
+      answeredCalls: item.answeredCalls + added[3],
+      missedCalls: item.missedCalls + added[4],
+      voicemails: item.voicemails + added[5],
+      totalMinutes,
+      totalHours: totalMinutes / 60,
+      avgMinutes: totalCalls ? totalMinutes / totalCalls : 0,
+    };
+  });
+}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { callData } from "../../call-data";
+import { callData, mergeCallFeedRows } from "../../call-data";
 import { callPersonData } from "../../call-person-data";
 import { yesterdayCalls, yesterdayPersonCalls, yesterdayTrials } from "../../daily-data";
 import { membershipData, type CenterMembership } from "../../membership-data";
@@ -22,6 +22,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const [dayFilter, setDayFilter] = useState("All days");
   const [sort, setSort] = useState("day");
   const [liveMembershipData, setLiveMembershipData] = useState<CenterMembership[]>(membershipData);
+  const [liveCallData, setLiveCallData] = useState(callData);
 
   useEffect(() => {
     const loadMembershipData = async () => {
@@ -29,6 +30,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         const response = await fetch(`${MEMBERSHIP_FEED_URL}&t=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) return;
         const rows = (await response.text()).trim().split(/\r?\n/).slice(1);
+        setLiveCallData(mergeCallFeedRows(callData, rows));
         const updated = rows.map((row) => {
           const values = row.split(",").map((value) => value.replace(/^"|"$/g, "").trim());
           return {
@@ -62,7 +64,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   }, []);
 
   const selected = reports.find((report) => report.id === centerId) ?? reports[0];
-  const selectedCalls = callData.find((item) => item.center === selected.center) ?? callData[0];
+  const selectedCalls = liveCallData.find((item) => item.center === selected.center) ?? liveCallData[0];
   const people = callPersonData.filter((item) => item.center === selected.center && item.totalMinutes > 0);
   const teamTrials = teamTrialData.filter((item) => item.center === selected.center);
   const membership = liveMembershipData.find((item) => item.center === selected.center);
