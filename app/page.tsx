@@ -47,11 +47,7 @@ export default function Home() {
 
   return (
     <main className="overview-page">
-      <header className="navy-header">
-        <div className="wordmark">
-          <span className="shield">K</span>
-          <div><strong>KIDSTRONG</strong><small>REGIONAL PERFORMANCE</small></div>
-        </div>
+      <header className="navy-header brandless-header">
         <div className="header-title">
           <span>REGIONAL PERFORMANCE COMMAND CENTER</span>
           <strong>JULY 2026</strong>
@@ -65,10 +61,9 @@ export default function Home() {
       <div className="page-shell overview-shell">
         <section className="overview-hero">
           <div>
-            <p className="kicker">4 CENTER ROLLUP</p>
             <h1>NJ/CT/NY/DE/MD. <span>Southern New Jersey.</span></h1>
+            <p>See the regional picture at a glance, then select a center for its complete trial, call-time, and membership performance story.</p>
           </div>
-          <p>See the regional picture at a glance, then select a center for its complete trial and call-time performance story.</p>
         </section>
 
         <section className="regional-totals" aria-label="Regional totals">

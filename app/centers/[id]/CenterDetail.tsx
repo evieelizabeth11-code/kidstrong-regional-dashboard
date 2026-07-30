@@ -205,8 +205,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
 
   return (
     <main className="detail-page">
-      <header className="navy-header">
-        <Link href="/" className="wordmark"><span className="shield">K</span><div><strong>KIDSTRONG</strong><small>REGIONAL PERFORMANCE</small></div></Link>
+      <header className="navy-header brandless-header">
         <div className="header-title"><span>{sectionTitle}</span><strong>{selected.center.toUpperCase()}</strong></div>
         <div className="date-lockup"><span className="calendar-icon">29</span><div><small>REPORTING WINDOW</small><strong>July 1 – July 29</strong></div></div>
       </header>
