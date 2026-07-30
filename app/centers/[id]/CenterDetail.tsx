@@ -22,11 +22,6 @@ const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
 const DAYS_REMAINING = 3;
 const MEMBERSHIP_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
-const DAILY_CALLS_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=1374162492&single=true&output=csv";
-const parseCsvRow = (row: string) =>
-  Array.from(row.matchAll(/(?:^|,)(?:"((?:[^"]|"")*)"|([^,]*))/g), (match) =>
-    (match[1] ?? match[2] ?? "").replace(/""/g, '"').trim(),
-  );
 type Section = "overview" | "trials" | "calls" | "membership";
 
 export default function CenterDetail({ centerId, section }: { centerId: string; section: Section }) {
@@ -45,8 +40,39 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         if (!response.ok) return;
         const rows = (await response.text()).trim().split(/\r?\n/).slice(1);
         setLiveCallData(mergeCallFeedRows(callData, rows));
+        const dailyCalls: DailyCalls[] = [];
+        const dailyPeople: DailyPersonCalls[] = [];
+        let latestSnapshotSerial = 0;
         const updated = rows.map((row) => {
           const values = row.split(",").map((value) => value.replace(/^"|"$/g, "").trim());
+          const snapshotSerial = Number(values[22]) || 0;
+          const snapshotCalls = Number(values[23]) || 0;
+          const snapshotOutbound = Number(values[24]) || 0;
+          const snapshotMinutes = Number(values[25]) || 0;
+          if (values[0] && snapshotSerial) {
+            latestSnapshotSerial = Math.max(latestSnapshotSerial, snapshotSerial);
+            dailyCalls.push({
+              center: values[0],
+              totalCalls: snapshotCalls,
+              inboundCalls: Math.max(0, snapshotCalls - snapshotOutbound),
+              outboundCalls: snapshotOutbound,
+              answeredCalls: 0,
+              missedCalls: 0,
+              voicemails: 0,
+              totalMinutes: snapshotMinutes,
+            });
+            (values[26] ?? "").split(";").forEach((entry) => {
+              const [person, minutes, calls] = entry.split("|");
+              if (person && Number(minutes) > 0) {
+                dailyPeople.push({
+                  center: values[0],
+                  person,
+                  totalMinutes: Number(minutes),
+                  totalCalls: Number(calls) || 0,
+                });
+              }
+            });
+          }
           return {
             center: values[0],
             totalMembers: Number(values[1]),
@@ -69,72 +95,23 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           };
         }).filter((item) => item.center && Number.isFinite(item.signups.current));
         if (updated.length) setLiveMembershipData(updated);
+        if (dailyCalls.length) setLiveYesterdayCalls(dailyCalls);
+        if (dailyPeople.length) setLiveYesterdayPeople(dailyPeople);
+        if (latestSnapshotSerial) {
+          const snapshot = new Date(Date.UTC(1899, 11, 30) + latestSnapshotSerial * 86400000);
+          setSnapshotDate(snapshot.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            timeZone: "UTC",
+          }));
+        }
       } catch {
         // Keep the last built-in snapshot when the published feed is unavailable.
       }
     };
 
     loadMembershipData();
-
-    const loadDailyCalls = async () => {
-      try {
-        const response = await fetch(`${DAILY_CALLS_FEED_URL}&t=${Date.now()}`, { cache: "no-store" });
-        if (!response.ok) return;
-        const records = (await response.text())
-          .trim()
-          .split(/\r?\n/)
-          .map(parseCsvRow)
-          .filter((values) => /^\d{4}-\d{2}-\d{2}$/.test(values[0] ?? "") && values[1] && values[2]);
-        const latestDate = records.reduce((latest, values) => values[0] > latest ? values[0] : latest, "");
-        const latestRecords = records.filter((values) => values[0] === latestDate);
-        if (!latestRecords.length) return;
-
-        const centerTotals = new Map<string, DailyCalls>();
-        const peopleTotals = new Map<string, DailyPersonCalls>();
-        latestRecords.forEach((values) => {
-          const center = values[1];
-          const totalCalls = Number(values[3]) || 0;
-          const totalMinutes = Number(values[9]) || 0;
-          const current = centerTotals.get(center) ?? {
-            center,
-            totalCalls: 0,
-            inboundCalls: 0,
-            outboundCalls: 0,
-            answeredCalls: 0,
-            missedCalls: 0,
-            voicemails: 0,
-            totalMinutes: 0,
-          };
-          current.totalCalls += totalCalls;
-          current.inboundCalls += Number(values[4]) || 0;
-          current.outboundCalls += Number(values[5]) || 0;
-          current.answeredCalls += Number(values[6]) || 0;
-          current.missedCalls += Number(values[7]) || 0;
-          current.voicemails += Number(values[8]) || 0;
-          current.totalMinutes += totalMinutes;
-          centerTotals.set(center, current);
-          if (totalMinutes > 0) {
-            const personKey = `${center}::${values[2]}`;
-            const person = peopleTotals.get(personKey) ?? { center, person: values[2], totalCalls: 0, totalMinutes: 0 };
-            person.totalCalls += totalCalls;
-            person.totalMinutes += totalMinutes;
-            peopleTotals.set(personKey, person);
-          }
-        });
-
-        setLiveYesterdayCalls(Array.from(centerTotals.values()));
-        setLiveYesterdayPeople(Array.from(peopleTotals.values()));
-        setSnapshotDate(new Date(`${latestDate}T12:00:00`).toLocaleDateString("en-US", {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-        }));
-      } catch {
-        // Keep the built-in daily snapshot when the published call feed is unavailable.
-      }
-    };
-
-    loadDailyCalls();
   }, []);
 
   const selected = reports.find((report) => report.id === centerId) ?? reports[0];
