@@ -500,3 +500,123 @@ footer { font-size:11px; }
   .overview-hero>p { font-size:16px; }
   .day-table-head span,.day-table-row>* { font-size:10px; }
 }
+
+/* Unified membership-inspired visual system */
+:root { --surface-radius:14px;--surface-shadow:0 18px 38px rgba(0,0,0,.18); }
+.panel,.trial-reconciliation,.yesterday-snapshot,.center-section-card,.call-goal-hero,.people-call-panel {
+  border-radius:var(--surface-radius);
+  border-color:rgba(255,255,255,.14);
+  box-shadow:var(--surface-shadow);
+  overflow:hidden;
+}
+.panel-bar {
+  min-height:52px;
+  padding:14px 18px;
+  background:linear-gradient(110deg,#06163a,#0b2c6b);
+  border-bottom:1px solid rgba(255,255,255,.12);
+}
+.panel-bar h3 { letter-spacing:.025em; }
+.overview-primary-kpis article,.kpi-grid article {
+  border-radius:var(--surface-radius);
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(145deg,#0b2863,#071b47);
+  box-shadow:var(--surface-shadow);
+}
+.overview-primary-kpis article:first-child,.kpi-grid article:nth-child(2) {
+  border-color:rgba(83,216,122,.36);
+  background:linear-gradient(145deg,rgba(19,77,72,.95),#071b47 72%);
+}
+.overview-primary-kpis article:nth-child(2),.kpi-grid article:nth-child(3) {
+  border-color:rgba(109,231,255,.28);
+}
+.trial-reconciliation { gap:1px;background:rgba(255,255,255,.12); }
+.trial-reconciliation article { background:linear-gradient(145deg,#0b2863,#071b47); }
+.snapshot-grid { gap:10px;padding:14px;background:#06183f; }
+.snapshot-grid article {
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:11px;
+  background:linear-gradient(145deg,#0b2863,#071b47);
+}
+.center-section-cards { gap:12px; }
+.center-section-card {
+  background:linear-gradient(145deg,#0b2863,#071b47);
+  border-color:rgba(255,255,255,.14);
+}
+.analysis-grid { gap:14px; }
+.analysis-grid .panel { background:linear-gradient(145deg,#0a2358,#06183f); }
+.insights-grid { gap:12px; }
+.insight { border-radius:12px;box-shadow:0 12px 26px rgba(0,0,0,.14); }
+.team-trial-grid {
+  gap:10px;
+  padding:14px;
+  background:#06183f;
+}
+.team-trial-card {
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:11px;
+  background:linear-gradient(145deg,#0b2863,#071b47);
+  overflow:hidden;
+}
+.class-panel { border-radius:var(--surface-radius);box-shadow:var(--surface-shadow); }
+.call-goal-hero {
+  padding:26px;
+  background:linear-gradient(145deg,rgba(19,77,72,.9),#071b47 72%);
+  border-color:rgba(83,216,122,.34);
+}
+.call-detail-strip {
+  gap:10px;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  overflow:visible;
+}
+.call-detail-strip>div {
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:12px;
+  background:linear-gradient(145deg,#0b2863,#071b47);
+  box-shadow:0 12px 28px rgba(0,0,0,.15);
+}
+.people-call-panel { background:linear-gradient(145deg,#0a2358,#06183f); }
+.people-call-head { background:#06163a; }
+.people-call-row { border-color:rgba(255,255,255,.09); }
+.regional-totals {
+  gap:12px;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  overflow:visible;
+  box-shadow:none;
+}
+.regional-totals article {
+  border:1px solid rgba(83,216,122,.27);
+  border-radius:var(--surface-radius);
+  background:linear-gradient(145deg,#0b2863,#06183f);
+  box-shadow:var(--surface-shadow);
+}
+.regional-totals article:last-child { border:1px solid rgba(83,216,122,.27); }
+.regional-leaderboard {
+  border-radius:18px;
+  background:linear-gradient(145deg,#0a2358,#06183f);
+  box-shadow:var(--surface-shadow);
+}
+.leaderboard-card {
+  border-radius:12px;
+  box-shadow:0 12px 26px rgba(0,0,0,.16);
+}
+.overview-center-card {
+  border-radius:16px;
+  background:linear-gradient(145deg,#0b2863,#06183f);
+  box-shadow:var(--surface-shadow);
+}
+.overview-center-card:hover { background:linear-gradient(145deg,#0e367f,#08245d); }
+.detail-nav>div a { border-radius:9px;padding:10px 13px; }
+.detail-nav>div a.active { box-shadow:0 8px 18px rgba(83,216,122,.2); }
+
+@media(max-width:980px){
+  .regional-totals article:nth-child(2) { border-right:1px solid rgba(83,216,122,.27); }
+}
+@media(max-width:620px){
+  .regional-totals article,.regional-totals article:last-child { border:1px solid rgba(83,216,122,.27); }
+  .call-detail-strip>div { border:1px solid rgba(255,255,255,.13); }
+  .snapshot-grid article { border:1px solid rgba(255,255,255,.1); }
+}
