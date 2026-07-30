@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { callData, mergeCallFeedRows } from "../../call-data";
 import { callPersonData } from "../../call-person-data";
-import { yesterdayCalls, yesterdayPersonCalls, yesterdayTrials } from "../../daily-data";
+import {
+  yesterdayCalls,
+  yesterdayPersonCalls,
+  yesterdayTrials,
+  type DailyCalls,
+  type DailyPersonCalls,
+} from "../../daily-data";
 import { membershipData, type CenterMembership } from "../../membership-data";
 import { reports } from "../../trial-data";
 import { teamTrialData } from "../../team-trial-data";
@@ -16,6 +22,11 @@ const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
 const DAYS_REMAINING = 3;
 const MEMBERSHIP_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
+const DAILY_CALLS_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=1374162492&single=true&output=csv";
+const parseCsvRow = (row: string) =>
+  Array.from(row.matchAll(/(?:^|,)(?:"((?:[^"]|"")*)"|([^,]*))/g), (match) =>
+    (match[1] ?? match[2] ?? "").replace(/""/g, '"').trim(),
+  );
 type Section = "overview" | "trials" | "calls" | "membership";
 
 export default function CenterDetail({ centerId, section }: { centerId: string; section: Section }) {
@@ -23,6 +34,9 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const [sort, setSort] = useState("day");
   const [liveMembershipData, setLiveMembershipData] = useState<CenterMembership[]>(membershipData);
   const [liveCallData, setLiveCallData] = useState(callData);
+  const [liveYesterdayCalls, setLiveYesterdayCalls] = useState<DailyCalls[]>(yesterdayCalls);
+  const [liveYesterdayPeople, setLiveYesterdayPeople] = useState<DailyPersonCalls[]>(yesterdayPersonCalls);
+  const [snapshotDate, setSnapshotDate] = useState("Tuesday, July 28");
 
   useEffect(() => {
     const loadMembershipData = async () => {
@@ -61,6 +75,60 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
     };
 
     loadMembershipData();
+
+    const loadDailyCalls = async () => {
+      try {
+        const response = await fetch(`${DAILY_CALLS_FEED_URL}&t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const records = (await response.text())
+          .trim()
+          .split(/\r?\n/)
+          .map(parseCsvRow)
+          .filter((values) => /^\d{4}-\d{2}-\d{2}$/.test(values[0] ?? "") && values[1] && values[2]);
+        const latestDate = records.reduce((latest, values) => values[0] > latest ? values[0] : latest, "");
+        const latestRecords = records.filter((values) => values[0] === latestDate);
+        if (!latestRecords.length) return;
+
+        const centerTotals = new Map<string, DailyCalls>();
+        const peopleRows: DailyPersonCalls[] = [];
+        latestRecords.forEach((values) => {
+          const center = values[1];
+          const totalCalls = Number(values[3]) || 0;
+          const totalMinutes = Number(values[9]) || 0;
+          const current = centerTotals.get(center) ?? {
+            center,
+            totalCalls: 0,
+            inboundCalls: 0,
+            outboundCalls: 0,
+            answeredCalls: 0,
+            missedCalls: 0,
+            voicemails: 0,
+            totalMinutes: 0,
+          };
+          current.totalCalls += totalCalls;
+          current.inboundCalls += Number(values[4]) || 0;
+          current.outboundCalls += Number(values[5]) || 0;
+          current.answeredCalls += Number(values[6]) || 0;
+          current.missedCalls += Number(values[7]) || 0;
+          current.voicemails += Number(values[8]) || 0;
+          current.totalMinutes += totalMinutes;
+          centerTotals.set(center, current);
+          if (totalMinutes > 0) peopleRows.push({ center, person: values[2], totalCalls, totalMinutes });
+        });
+
+        setLiveYesterdayCalls(Array.from(centerTotals.values()));
+        setLiveYesterdayPeople(peopleRows);
+        setSnapshotDate(new Date(`${latestDate}T12:00:00`).toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        }));
+      } catch {
+        // Keep the built-in daily snapshot when the published call feed is unavailable.
+      }
+    };
+
+    loadDailyCalls();
   }, []);
 
   const selected = reports.find((report) => report.id === centerId) ?? reports[0];
@@ -68,9 +136,11 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const people = callPersonData.filter((item) => item.center === selected.center && item.totalMinutes > 0);
   const teamTrials = teamTrialData.filter((item) => item.center === selected.center);
   const membership = liveMembershipData.find((item) => item.center === selected.center);
-  const yesterdayCall = yesterdayCalls.find((item) => item.center === selected.center);
+  const yesterdayCall = liveYesterdayCalls.find((item) => item.center === selected.center);
   const yesterdayTrial = yesterdayTrials.find((item) => item.center === selected.center);
-  const yesterdayPeople = yesterdayPersonCalls.filter((item) => item.center === selected.center && item.totalMinutes > 0);
+  const yesterdayPeople = liveYesterdayPeople
+    .filter((item) => item.center === selected.center && item.totalMinutes > 0)
+    .sort((a, b) => b.totalMinutes - a.totalMinutes);
   const namedMinutes = people.reduce((sum, item) => sum + item.totalMinutes, 0);
   const sharedMinutes = Math.max(0, selectedCalls.totalMinutes - namedMinutes);
   const callGoalPct = pct(selectedCalls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
@@ -148,7 +218,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           </section>
 
           <section className="yesterday-snapshot">
-            <div className="snapshot-heading"><div><small>YESTERDAY&apos;S SNAPSHOT</small><strong>Tuesday, July 28</strong></div><span>Included in month-to-date totals</span></div>
+            <div className="snapshot-heading"><div><small>YESTERDAY&apos;S SNAPSHOT</small><strong>{snapshotDate}</strong></div><span>Included in month-to-date totals</span></div>
             <div className="snapshot-grid">
               <article><small>TRIALS SCHEDULED</small><strong>{yesterdayTrial?.scheduled ?? "—"}</strong><span>{yesterdayTrial ? "yesterday's trial volume" : "awaiting July 28 results"}</span></article>
               <article><small>TRIALS SHOWED</small><strong>{yesterdayTrial?.showed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.showed, yesterdayTrial.scheduled)} show rate` : "awaiting July 28 results"}</span></article>
