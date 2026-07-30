@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { callData, mergeCallFeedRows } from "./call-data";
+import { membershipData, type CenterMembership } from "./membership-data";
 import RegionalLeaderboard from "./RegionalLeaderboard";
 import { reports } from "./trial-data";
 import { mergeOfficialTrialFeed } from "./trial-feed";
@@ -17,6 +18,7 @@ const DASHBOARD_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStY
 
 export default function Home() {
   const [liveCallData, setLiveCallData] = useState(callData);
+  const [liveMembershipData, setLiveMembershipData] = useState<CenterMembership[]>(membershipData);
   const [liveReports, setLiveReports] = useState(reports);
 
   useEffect(() => {
@@ -27,6 +29,25 @@ export default function Home() {
         const rows = (await response.text()).trim().split(/\r?\n/).slice(1);
         setLiveCallData(mergeCallFeedRows(callData, rows));
         setLiveReports(mergeOfficialTrialFeed(reports, rows));
+        const memberships = rows.map((row) => {
+          const values = row.split(",").map((value) => value.replace(/^"|"$/g, "").trim());
+          return {
+            center: values[0],
+            totalMembers: Number(values[1]),
+            bomApm: Number(values[2]),
+            holds: { total: Number(values[3]), scheduled: null, starting: Number(values[4]), lifting: Number(values[5]) },
+            drops: { total: Number(values[6]), pending: Number(values[7]) },
+            signups: {
+              current: Number(values[8]),
+              goal: Number(values[9]),
+              trial: Number(values[13]),
+              nonTrial: Number(values[14]),
+            },
+            pastDue: Number(values[10]),
+            reportDate: values[12],
+          };
+        }).filter((item) => item.center && Number.isFinite(item.signups.current));
+        if (memberships.length) setLiveMembershipData(memberships);
       } catch {
         // Keep the last built-in MTD totals when the live feed is unavailable.
       }
@@ -83,6 +104,7 @@ export default function Home() {
         <section className="overview-center-grid">
           {liveReports.map((report) => {
             const calls = liveCallData.find((item) => item.center === report.center) ?? liveCallData[0];
+            const membership = liveMembershipData.find((item) => item.center === report.center);
             const callProgress = pct(calls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
             const nextCallTarget = [MONTHLY_CALL_MINUTE_GOAL, ...CALL_PUSH_GOALS].find((goal) => goal > calls.totalMinutes)
               ?? Math.ceil((calls.totalMinutes + 1) / 500) * 500;
@@ -93,7 +115,7 @@ export default function Home() {
                   <span>OPEN CENTER <b>→</b></span>
                 </div>
                 <div className="overview-card-metrics">
-                  <div><small>SCHEDULED</small><strong>{report.scheduled}</strong></div>
+                  <div><small>SIGNS MTD</small><strong>{membership?.signups.current ?? "—"}</strong></div>
                   <div className="featured-rate"><small>SHOW RATE</small><strong>{rate(report.showed, report.scheduled)}</strong></div>
                   <div className="featured-rate"><small>CLOSE RATE</small><strong>{rate(report.closed, report.showed)}</strong></div>
                 </div>
