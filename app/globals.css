@@ -368,3 +368,34 @@ button:focus-visible,select:focus-visible { outline:3px solid #55a6ff;outline-of
 @media(max-width:1180px){.overview-center-grid{grid-template-columns:1fr 1fr}.team-trial-grid{grid-template-columns:repeat(3,1fr)}.membership-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:980px){.navy-header{grid-template-columns:1fr 1fr}.header-title{display:none}.overview-hero{grid-template-columns:1fr}.regional-totals{grid-template-columns:1fr 1fr}.regional-totals article:nth-child(2){border-right:0}.leaderboard-grid{grid-template-columns:1fr}.insights-grid{grid-template-columns:1fr}.kpi-grid,.call-detail-strip{grid-template-columns:1fr 1fr}.analysis-grid{grid-template-columns:1fr}.people-call-panel{overflow-x:auto}.people-call-head,.people-call-row{min-width:820px}.center-section-cards{grid-template-columns:1fr}.center-section-card{min-height:150px}.center-switcher{justify-content:flex-start}.membership-victory,.membership-forecast-grid,.membership-scenarios{grid-template-columns:1fr}.snapshot-grid{grid-template-columns:1fr 1fr}.snapshot-grid article:nth-child(2){border-right:0}.snapshot-people{grid-template-columns:1fr}}
 @media(max-width:620px){.navy-header{grid-template-columns:1fr}.date-lockup{display:none}.page-shell{width:calc(100% - 20px)}.overview-shell{padding-top:35px}.overview-hero h1{font-size:clamp(34px,10vw,49px);white-space:normal}.regional-totals,.overview-center-grid,.team-trial-grid,.membership-grid,.overview-primary-kpis,.snapshot-grid{grid-template-columns:1fr}.regional-totals article{border-right:0;border-bottom:1px solid rgba(255,255,255,.12)}.regional-leaderboard{padding:16px}.leaderboard-heading,.overview-section-head,.detail-hero,.detail-nav{align-items:flex-start;flex-direction:column;gap:14px}.detail-nav>div{justify-content:flex-start}.section-tabs{width:100%;overflow-x:auto}.kpi-grid,.call-detail-strip{grid-template-columns:1fr}.call-detail-strip>div{border-right:0;border-bottom:1px solid var(--line)}.snapshot-heading{align-items:flex-start;flex-direction:column;gap:6px}.snapshot-grid article{border-right:0;border-bottom:1px solid var(--line)}.snapshot-grid .snapshot-awaiting{grid-column:span 1}.day-table-head,.day-table-row{grid-template-columns:1.2fr repeat(5,.72fr)}.day-table-head span,.day-table-row>*{padding:9px 3px;font-size:8px}.grouped-chart{gap:7px;padding-left:12px;padding-right:12px}.class-bar{align-items:flex-start;flex-direction:column}.table-controls{width:100%}.table-controls select{flex:1}.call-goal-hero>div{align-items:flex-start;flex-direction:column}.membership-pace{grid-template-columns:1fr}.membership-pace>div:nth-child(2){text-align:left}.membership-pace>i{grid-column:1}.membership-current-row{display:grid;grid-template-columns:1fr 1fr}.membership-current-row>span{display:none}.signup-breakdown{grid-template-columns:1fr}.signup-breakdown>span{display:none}.trial-funnel-needed>div{gap:6px;flex-wrap:wrap}.trial-funnel-needed em{margin:0}.trial-funnel-needed b{font-size:27px}footer{flex-direction:column;gap:4px}}
+
+/* Larger, more readable dashboard type scale */
+small { font-size:11px!important; line-height:1.35; }
+.wordmark small,.date-lockup small { font-size:10px!important; }
+.kicker { font-size:12px; }
+.detail-nav>a,.detail-nav>div a { font-size:12px; }
+.detail-hero>div:first-child>p:last-child,.overview-section-head>span { font-size:14px; }
+.overview-hero>p { font-size:18px; }
+.regional-totals span,.overview-card-top>span,.overview-call-goal>div,.panel-bar span { font-size:11px; line-height:1.4; }
+.snapshot-heading>span,.snapshot-grid span,.snapshot-people>div:first-child span,.snapshot-person-list article>small { font-size:11px; line-height:1.4; }
+.center-section-card span,.call-goal-hero span,.call-detail-strip span { font-size:12px; line-height:1.4; }
+.membership-pace span,.signup-breakdown article span,.membership-victory p,.membership-victory span,.eom-forecast span,.trial-funnel-needed span,.trial-funnel-needed p { font-size:11px; line-height:1.45; }
+.people-call-head { font-size:10px; }
+.people-call-row { font-size:12px; }
+.person-name strong,.person-share strong { font-size:13px; }
+.person-call-time span,.people-call-footnote { font-size:10px; }
+.panel-bar h3 { font-size:14px; }
+.day-table-head { font-size:10px; }
+.day-table-row { font-size:13px; }
+.day-table-row strong { font-size:12px; }
+.insight strong { font-size:13px; }
+.table-controls select { font-size:11px; }
+table { font-size:12px; }
+th { font-size:10px; }
+footer { font-size:11px; }
+
+@media(max-width:620px){
+  small { font-size:10px!important; }
+  .overview-hero>p { font-size:16px; }
+  .day-table-head span,.day-table-row>* { font-size:10px; }
+}
