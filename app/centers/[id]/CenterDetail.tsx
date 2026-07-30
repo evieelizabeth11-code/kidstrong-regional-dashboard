@@ -24,7 +24,7 @@ const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor
 const progressTone = (value: number) =>
   value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
-const DAYS_REMAINING = 3;
+const DAYS_REMAINING = 2;
 const MEMBERSHIP_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
 type Section = "overview" | "trials" | "calls" | "membership";
 
@@ -38,7 +38,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const [liveYesterdayTrials, setLiveYesterdayTrials] = useState<DailyTrials[]>(yesterdayTrials);
   const [liveReports, setLiveReports] = useState(reports);
   const [trialComparisons, setTrialComparisons] = useState<TrialSourceComparison[]>([]);
-  const [snapshotDate, setSnapshotDate] = useState("Tuesday, July 28");
+  const [snapshotDate, setSnapshotDate] = useState("Wednesday, July 29");
 
   useEffect(() => {
     const loadMembershipData = async () => {
@@ -154,7 +154,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const sharedMinutes = Math.max(0, selectedCalls.totalMinutes - namedMinutes);
   const callGoalPct = pct(selectedCalls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
   const signupGoalPct = membership ? pct(membership.signups.current, membership.signups.goal) : 0;
-  const expectedSignups = membership ? membership.signups.goal * (28 / 31) : 0;
+  const expectedSignups = membership ? membership.signups.goal * (29 / 31) : 0;
   const goalAchieved = membership ? membership.signups.current >= membership.signups.goal : false;
   const paceLabel = membership ? (goalAchieved ? "Goal crushed" : membership.signups.current >= expectedSignups - 1 ? "On pace" : "Behind pace") : "";
   const currentActivePaying = membership ? membership.totalMembers - membership.holds.total - membership.pastDue : 0;
@@ -205,7 +205,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
       <header className="navy-header">
         <Link href="/" className="wordmark"><span className="shield">K</span><div><strong>KIDSTRONG</strong><small>REGIONAL PERFORMANCE</small></div></Link>
         <div className="header-title"><span>{sectionTitle}</span><strong>{selected.center.toUpperCase()}</strong></div>
-        <div className="date-lockup"><span className="calendar-icon">28</span><div><small>REPORTING WINDOW</small><strong>July 1 – July 28</strong></div></div>
+        <div className="date-lockup"><span className="calendar-icon">29</span><div><small>REPORTING WINDOW</small><strong>July 1 – July 29</strong></div></div>
       </header>
 
       <div className="page-shell">
@@ -239,9 +239,9 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           <section className="yesterday-snapshot">
             <div className="snapshot-heading"><div><small>YESTERDAY&apos;S SNAPSHOT · TRIAL TRACKER</small><strong>{snapshotDate}</strong></div><span>Operational detail for reconciliation</span></div>
             <div className="snapshot-grid">
-              <article><small>TRIALS SCHEDULED</small><strong>{yesterdayTrial?.scheduled ?? "—"}</strong><span>{yesterdayTrial ? "yesterday's trial volume" : "awaiting July 28 results"}</span></article>
-              <article><small>TRIALS SHOWED</small><strong>{yesterdayTrial?.showed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.showed, yesterdayTrial.scheduled)} show rate` : "awaiting July 28 results"}</span></article>
-              <article><small>TRIALS SIGNED</small><strong>{yesterdayTrial?.closed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.closed, yesterdayTrial.showed)} close rate` : "awaiting July 28 results"}</span></article>
+              <article><small>TRIALS SCHEDULED</small><strong>{yesterdayTrial?.scheduled ?? "—"}</strong><span>{yesterdayTrial ? "yesterday's trial volume" : "awaiting July 29 results"}</span></article>
+              <article><small>TRIALS SHOWED</small><strong>{yesterdayTrial?.showed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.showed, yesterdayTrial.scheduled)} show rate` : "awaiting July 29 results"}</span></article>
+              <article><small>TRIALS SIGNED</small><strong>{yesterdayTrial?.closed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.closed, yesterdayTrial.showed)} close rate` : "awaiting July 29 results"}</span></article>
               <article><small>TOTAL TALK TIME</small><strong>{yesterdayCall?.totalMinutes.toFixed(1) ?? "—"} <em>min</em></strong><span>{yesterdayCall?.totalCalls ?? 0} calls · {yesterdayCall?.outboundCalls ?? 0} outbound</span></article>
             </div>
             <div className="snapshot-people">
@@ -310,7 +310,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             <span>−</span><article><small>PAST DUE</small><strong>{membership.pastDue}</strong></article>
             <span>=</span><article className="active-paying-now"><small>CURRENT ACTIVE PAYING</small><strong>{currentActivePaying}</strong></article>
           </div>
-          <div className={`membership-pace ${progressTone(signupGoalPct)}`}><div><small>{signupGoalPct > 100 ? "MONTHLY GOAL SURPASSED ★" : signupGoalPct >= 100 ? "MONTHLY GOAL HIT ✓" : "MONTHLY SIGN-UP PACE"}</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected by July 28</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{goalAchieved ? `${stretchRemaining} to the ${stretchGoal} stretch milestone` : `${Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining`}</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
+          <div className={`membership-pace ${progressTone(signupGoalPct)}`}><div><small>{signupGoalPct > 100 ? "MONTHLY GOAL SURPASSED ★" : signupGoalPct >= 100 ? "MONTHLY GOAL HIT ✓" : "MONTHLY SIGN-UP PACE"}</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected through July 29</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{goalAchieved ? `${stretchRemaining} to the ${stretchGoal} stretch milestone` : `${Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining`}</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
           <section className="signup-milestones" aria-label="Sign-up milestone ladder">
             {[
               { goal: membership.signups.goal, label: "ORIGINAL GOAL", tone: "original" },

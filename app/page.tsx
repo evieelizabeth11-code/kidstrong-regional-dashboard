@@ -56,8 +56,8 @@ export default function Home() {
           <strong>JULY 2026</strong>
         </div>
         <div className="date-lockup">
-          <span className="calendar-icon">27</span>
-          <div><small>REPORTING WINDOW</small><strong>July 1 – July 28</strong></div>
+          <span className="calendar-icon">29</span>
+          <div><small>REPORTING WINDOW</small><strong>July 1 – July 29</strong></div>
         </div>
       </header>
 
