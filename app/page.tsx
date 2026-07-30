@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { callData, mergeCallFeedRows } from "./call-data";
 import RegionalLeaderboard from "./RegionalLeaderboard";
 import { reports } from "./trial-data";
+import { mergeOfficialTrialFeed } from "./trial-feed";
 
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
 const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
@@ -15,6 +16,7 @@ const DASHBOARD_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStY
 
 export default function Home() {
   const [liveCallData, setLiveCallData] = useState(callData);
+  const [liveReports, setLiveReports] = useState(reports);
 
   useEffect(() => {
     const loadCalls = async () => {
@@ -23,6 +25,7 @@ export default function Home() {
         if (!response.ok) return;
         const rows = (await response.text()).trim().split(/\r?\n/).slice(1);
         setLiveCallData(mergeCallFeedRows(callData, rows));
+        setLiveReports(mergeOfficialTrialFeed(reports, rows));
       } catch {
         // Keep the last built-in MTD totals when the live feed is unavailable.
       }
@@ -30,7 +33,7 @@ export default function Home() {
     loadCalls();
   }, []);
 
-  const totals = reports.reduce(
+  const totals = liveReports.reduce(
     (sum, report) => ({
       scheduled: sum.scheduled + report.scheduled,
       showed: sum.showed + report.showed,
@@ -82,7 +85,7 @@ export default function Home() {
         </section>
 
         <section className="overview-center-grid">
-          {reports.map((report) => {
+          {liveReports.map((report) => {
             const calls = liveCallData.find((item) => item.center === report.center) ?? liveCallData[0];
             const callProgress = pct(calls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
             return (
@@ -106,7 +109,7 @@ export default function Home() {
           })}
         </section>
 
-        <footer>Sources: July Trial Performance Reports and Calls by Softphone User <span>Dashboard updated July 29, 2026</span></footer>
+        <footer>Official center trial totals: Daily Scorecard · Coaching detail: Trial Tracker <span>Dashboard updated through July 29, 2026</span></footer>
       </div>
     </main>
   );

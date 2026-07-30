@@ -14,6 +14,7 @@ import {
 } from "../../daily-data";
 import { membershipData, type CenterMembership } from "../../membership-data";
 import { reports } from "../../trial-data";
+import { mergeOfficialTrialFeed, trialSourceComparisons, type TrialSourceComparison } from "../../trial-feed";
 import { teamTrialData } from "../../team-trial-data";
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -35,6 +36,8 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const [liveYesterdayCalls, setLiveYesterdayCalls] = useState<DailyCalls[]>(yesterdayCalls);
   const [liveYesterdayPeople, setLiveYesterdayPeople] = useState<DailyPersonCalls[]>(yesterdayPersonCalls);
   const [liveYesterdayTrials, setLiveYesterdayTrials] = useState<DailyTrials[]>(yesterdayTrials);
+  const [liveReports, setLiveReports] = useState(reports);
+  const [trialComparisons, setTrialComparisons] = useState<TrialSourceComparison[]>([]);
   const [snapshotDate, setSnapshotDate] = useState("Tuesday, July 28");
 
   useEffect(() => {
@@ -44,6 +47,8 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         if (!response.ok) return;
         const rows = (await response.text()).trim().split(/\r?\n/).slice(1);
         setLiveCallData(mergeCallFeedRows(callData, rows));
+        setLiveReports(mergeOfficialTrialFeed(reports, rows));
+        setTrialComparisons(trialSourceComparisons(rows));
         const dailyCalls: DailyCalls[] = [];
         const dailyPeople: DailyPersonCalls[] = [];
         const dailyTrials: DailyTrials[] = [];
@@ -129,7 +134,13 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
     loadMembershipData();
   }, []);
 
-  const selected = reports.find((report) => report.id === centerId) ?? reports[0];
+  const selected = liveReports.find((report) => report.id === centerId) ?? liveReports[0];
+  const trialComparison = trialComparisons.find((item) => item.center === selected.center);
+  const trackerMatchesOfficial = trialComparison
+    ? trialComparison.official.scheduled === trialComparison.tracker.scheduled
+      && trialComparison.official.showed === trialComparison.tracker.showed
+      && trialComparison.official.closed === trialComparison.tracker.closed
+    : true;
   const selectedCalls = liveCallData.find((item) => item.center === selected.center) ?? liveCallData[0];
   const people = callPersonData.filter((item) => item.center === selected.center && item.totalMinutes > 0);
   const teamTrials = teamTrialData.filter((item) => item.center === selected.center);
@@ -206,17 +217,23 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
 
         <section className="detail-hero">
           <div><p className="kicker">JULY 2026 · {sectionTitle}</p><h1>{selected.center}</h1><p>{selected.dateRange}</p></div>
-          <div className="center-switcher">{reports.map((report) => <Link className={report.id === centerId ? "active" : ""} href={`/centers/${report.id}${section === "overview" ? "" : `/${section}`}`} key={report.id}>{report.center}</Link>)}</div>
+          <div className="center-switcher">{liveReports.map((report) => <Link className={report.id === centerId ? "active" : ""} href={`/centers/${report.id}${section === "overview" ? "" : `/${section}`}`} key={report.id}>{report.center}</Link>)}</div>
         </section>
 
         {section === "overview" && <>
           <section className="overview-primary-kpis">
-            <article><small>CENTER SHOW RATE</small><strong>{rate(selected.showed, selected.scheduled)}</strong><span>{selected.showed} of {selected.scheduled} trials showed</span></article>
-            <article><small>CENTER CLOSE RATE</small><strong>{rate(selected.closed, selected.showed)}</strong><span>{selected.closed} of {selected.showed} shown trials closed</span></article>
+            <article><small>CENTER SHOW RATE · OFFICIAL SCORECARD</small><strong>{rate(selected.showed, selected.scheduled)}</strong><span>{selected.showed} of {selected.scheduled} trials attended</span></article>
+            <article><small>CENTER CLOSE RATE · OFFICIAL SCORECARD</small><strong>{rate(selected.closed, selected.showed)}</strong><span>{selected.closed} of {selected.showed} attended trials signed</span></article>
           </section>
 
+          {trialComparison && <section className={`trial-reconciliation ${trackerMatchesOfficial ? "matched" : "warning"}`}>
+            <div><strong>{trackerMatchesOfficial ? "✓ TRIAL DATA RECONCILED" : "⚠ TRIAL TRACKER NEEDS REVIEW"}</strong><span>Official center reporting uses the Daily Scorecard.</span></div>
+            <p>Scorecard: {trialComparison.official.scheduled} scheduled · {trialComparison.official.showed} attended · {trialComparison.official.closed} signed</p>
+            <p>Trial Tracker: {trialComparison.tracker.scheduled} scheduled · {trialComparison.tracker.showed} attended · {trialComparison.tracker.closed} signed</p>
+          </section>}
+
           <section className="yesterday-snapshot">
-            <div className="snapshot-heading"><div><small>YESTERDAY&apos;S SNAPSHOT</small><strong>{snapshotDate}</strong></div><span>Included in month-to-date totals</span></div>
+            <div className="snapshot-heading"><div><small>YESTERDAY&apos;S SNAPSHOT · TRIAL TRACKER</small><strong>{snapshotDate}</strong></div><span>Operational detail for reconciliation</span></div>
             <div className="snapshot-grid">
               <article><small>TRIALS SCHEDULED</small><strong>{yesterdayTrial?.scheduled ?? "—"}</strong><span>{yesterdayTrial ? "yesterday's trial volume" : "awaiting July 28 results"}</span></article>
               <article><small>TRIALS SHOWED</small><strong>{yesterdayTrial?.showed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.showed, yesterdayTrial.scheduled)} show rate` : "awaiting July 28 results"}</span></article>
@@ -257,7 +274,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             <article><span className="metric-icon black">NS</span><div><small>NO SHOWS</small><strong>{selected.scheduled - selected.showed}</strong><p>{rate(selected.scheduled - selected.showed, selected.scheduled)} no-show rate</p></div></article>
           </section>
           {teamTrials.length > 0 && <section className="panel team-trial-panel">
-            <div className="panel-bar team-trial-bar"><div><h3>SHOW &amp; CLOSE RATES BY PERSON</h3><span>Team attribution</span></div><strong>{teamTrials.reduce((sum, item) => sum + item.closed, 0)} total closes</strong></div>
+            <div className="panel-bar team-trial-bar"><div><h3>SHOW &amp; CLOSE RATES BY PERSON</h3><span>Trial Tracker coaching data · may differ from official scorecard totals</span></div><strong>{teamTrials.reduce((sum, item) => sum + item.closed, 0)} tracker closes</strong></div>
             <div className="team-trial-grid">{teamTrials.map((person) => <article className="team-trial-card" key={person.person}><div className="team-trial-name"><strong>{person.person}</strong><span>{person.booked} booked · {person.closed} closed</span></div><div className="team-rate-pair"><div><small>SHOW RATE</small><strong>{person.showRate === null ? "—" : `${person.showRate}%`}</strong><i><b style={{ width: `${person.showRate ?? 0}%` }} /></i></div><div><small>CLOSE RATE</small><strong>{person.closeRate === null ? "—" : `${person.closeRate}%`}</strong><i><b style={{ width: `${person.closeRate ?? 0}%` }} /></i></div></div></article>)}</div>
           </section>}
           <section className="panel class-panel">
