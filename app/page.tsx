@@ -66,6 +66,10 @@ export default function Home() {
   );
   const totalMinutes = liveCallData.reduce((sum, item) => sum + item.totalMinutes, 0);
   const totalCalls = liveCallData.reduce((sum, item) => sum + item.totalCalls, 0);
+  const totalSignups = liveMembershipData.reduce((sum, item) => sum + item.signups.current, 0);
+  const totalDrops = liveMembershipData.reduce((sum, item) => sum + item.drops.total, 0);
+  const totalBomApm = liveMembershipData.reduce((sum, item) => sum + item.bomApm, 0);
+  const regionalAttrition = pct(totalDrops, totalBomApm);
 
   return (
     <main className="overview-page">
@@ -89,6 +93,8 @@ export default function Home() {
           <article><small>TRIALS SCHEDULED</small><strong>{totals.scheduled}</strong><span>across Southern New Jersey</span></article>
           <article><small>TRIALS SHOWED</small><div className="regional-value-pair"><strong>{totals.showed}</strong><em>{rate(totals.showed, totals.scheduled)}</em></div><span>regional show rate</span></article>
           <article><small>TRIALS CLOSED</small><div className="regional-value-pair"><strong>{totals.closed}</strong><em>{rate(totals.closed, totals.showed)}</em></div><span>regional close rate</span></article>
+          <article><small>SIGN-UPS MTD</small><strong>{totalSignups}</strong><span>regional new memberships</span></article>
+          <article><small>ATTRITION RATE</small><strong>{regionalAttrition.toFixed(1)}%</strong><span>{totalDrops} drops ÷ {totalBomApm.toLocaleString()} BOM APM</span></article>
           <article><small>CALL TIME</small><div className="regional-value-pair"><strong>{totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><em>{pct(totalMinutes, 12000).toFixed(1)}%</em></div><span>of 12,000 regional minutes</span></article>
         </section>
 
@@ -103,6 +109,7 @@ export default function Home() {
           {liveReports.map((report) => {
             const calls = liveCallData.find((item) => item.center === report.center) ?? liveCallData[0];
             const membership = liveMembershipData.find((item) => item.center === report.center);
+            const centerAttrition = membership ? pct(membership.drops.total, membership.bomApm) : 0;
             const callProgress = pct(calls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
             const nextCallTarget = [MONTHLY_CALL_MINUTE_GOAL, ...CALL_PUSH_GOALS].find((goal) => goal > calls.totalMinutes)
               ?? Math.ceil((calls.totalMinutes + 1) / 500) * 500;
@@ -116,6 +123,7 @@ export default function Home() {
                   <div><small>SIGNS MTD</small><strong>{membership?.signups.current ?? "—"}</strong></div>
                   <div className="featured-rate"><small>SHOW RATE</small><strong>{rate(report.showed, report.scheduled)}</strong></div>
                   <div className="featured-rate"><small>CLOSE RATE</small><strong>{rate(report.closed, report.showed)}</strong></div>
+                  <div className="attrition-rate"><small>ATTRITION</small><strong>{membership ? `${centerAttrition.toFixed(1)}%` : "—"}</strong></div>
                 </div>
                 <div className={`overview-call-goal ${progressTone(callProgress)}`}>
                   <div><span>{callProgress > 100 ? "GOAL SURPASSED ★" : callProgress >= 100 ? "GOAL HIT ✓" : "CALL-TIME GOAL"}</span><strong>{callProgress.toFixed(1)}%</strong></div>

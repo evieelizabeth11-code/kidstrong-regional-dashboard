@@ -158,6 +158,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const nextCallTarget = [MONTHLY_CALL_MINUTE_GOAL, ...CALL_PUSH_GOALS].find((goal) => goal > selectedCalls.totalMinutes)
     ?? Math.ceil((selectedCalls.totalMinutes + 1) / 500) * 500;
   const signupGoalPct = membership ? pct(membership.signups.current, membership.signups.goal) : 0;
+  const attritionPct = membership ? pct(membership.drops.total, membership.bomApm) : 0;
   const expectedSignups = membership ? membership.signups.goal * (29 / 31) : 0;
   const goalAchieved = membership ? membership.signups.current >= membership.signups.goal : false;
   const paceLabel = membership ? (goalAchieved ? "Goal crushed" : membership.signups.current >= expectedSignups - 1 ? "On pace" : "Behind pace") : "";
@@ -231,6 +232,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           <section className="overview-primary-kpis">
             <article><small>CENTER SHOW RATE · OFFICIAL SCORECARD</small><strong>{rate(selected.showed, selected.scheduled)}</strong><span>{selected.showed} of {selected.scheduled} trials attended</span></article>
             <article><small>CENTER CLOSE RATE · OFFICIAL SCORECARD</small><strong>{rate(selected.closed, selected.showed)}</strong><span>{selected.closed} of {selected.showed} attended trials signed</span></article>
+            <article className="attrition-kpi"><small>CENTER ATTRITION · MEMBERSHIP HEALTH</small><strong>{membership ? `${attritionPct.toFixed(1)}%` : "—"}</strong><span>{membership ? `${membership.drops.total} drops ÷ ${membership.bomApm} BOM APM` : "Membership data unavailable"}</span></article>
           </section>
 
           {trialComparison && <section className={`trial-reconciliation ${trackerMatchesOfficial ? "matched" : "warning"}`}>

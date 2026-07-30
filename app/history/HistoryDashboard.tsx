@@ -10,7 +10,9 @@ type HistoryRow = {
   status: string;
   center: string;
   totalMembers: number;
+  bomApm: number;
   activePaying: number;
+  drops: number;
   signups: number;
   signupGoal: number;
   scheduled: number;
@@ -44,7 +46,9 @@ export default function HistoryDashboard() {
             status: values[3],
             center: values[4],
             totalMembers: Number(values[5]),
+            bomApm: Number(values[6]),
             activePaying: Number(values[7]),
+            drops: Number(values[12]),
             signups: Number(values[14]),
             signupGoal: Number(values[17]),
             scheduled: Number(values[18]),
@@ -79,7 +83,9 @@ export default function HistoryDashboard() {
     signups: sum.signups + row.signups,
     callMinutes: sum.callMinutes + row.callMinutes,
     activePaying: sum.activePaying + row.activePaying,
-  }), { scheduled: 0, attended: 0, closed: 0, signups: 0, callMinutes: 0, activePaying: 0 });
+    drops: sum.drops + row.drops,
+    bomApm: sum.bomApm + row.bomApm,
+  }), { scheduled: 0, attended: 0, closed: 0, signups: 0, callMinutes: 0, activePaying: 0, drops: 0, bomApm: 0 });
   const status = selectedRows[0]?.status ?? "IN PROGRESS";
   const dataThrough = selectedRows[0]?.dataThrough || "2026-07-29";
 
@@ -104,6 +110,7 @@ export default function HistoryDashboard() {
         <article><small>SHOW RATE</small><strong>{pct(totals.attended, totals.scheduled).toFixed(1)}%</strong><span>{totals.attended} of {totals.scheduled}</span></article>
         <article><small>CLOSE RATE</small><strong>{pct(totals.closed, totals.attended).toFixed(1)}%</strong><span>{totals.closed} of {totals.attended}</span></article>
         <article><small>TALK TIME</small><strong>{totals.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><span>regional minutes</span></article>
+        <article><small>ATTRITION</small><strong>{pct(totals.drops, totals.bomApm).toFixed(1)}%</strong><span>{totals.drops} drops ÷ {totals.bomApm.toLocaleString()} BOM APM</span></article>
         <article><small>ACTIVE PAYING</small><strong>{totals.activePaying.toLocaleString()}</strong><span>across four centers</span></article>
       </section>
 
@@ -116,6 +123,7 @@ export default function HistoryDashboard() {
             <div><dt>SHOW</dt><dd>{pct(row.attended, row.scheduled).toFixed(1)}%</dd></div>
             <div><dt>CLOSE</dt><dd>{pct(row.closed, row.attended).toFixed(1)}%</dd></div>
             <div><dt>CALL MIN.</dt><dd>{row.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</dd></div>
+            <div><dt>ATTRITION</dt><dd>{pct(row.drops, row.bomApm).toFixed(1)}%</dd></div>
             <div><dt>ACTIVE PAYING</dt><dd>{row.activePaying}</dd></div>
           </dl>
         </article>)}
