@@ -15,8 +15,11 @@ export type CenterMembership = {
   signups: {
     goal: number;
     current: number;
+    trial: number;
+    nonTrial: number;
   };
   pastDue: number;
+  reportDate?: string;
 };
 
 export const membershipData: CenterMembership[] = [
@@ -26,7 +29,7 @@ export const membershipData: CenterMembership[] = [
     bomApm: 545,
     holds: { total: 53, scheduled: null, lifting: 0, starting: 6 },
     drops: { total: 26, pending: 0 },
-    signups: { goal: 60, current: 31 },
+    signups: { goal: 60, current: 31, trial: 31, nonTrial: 0 },
     pastDue: 13,
   },
   {
@@ -35,7 +38,7 @@ export const membershipData: CenterMembership[] = [
     bomApm: 445,
     holds: { total: 35, scheduled: null, lifting: 1, starting: 2 },
     drops: { total: 46, pending: 1 },
-    signups: { goal: 50, current: 33 },
+    signups: { goal: 50, current: 33, trial: 30, nonTrial: 3 },
     pastDue: 12,
   },
   {
@@ -44,7 +47,7 @@ export const membershipData: CenterMembership[] = [
     bomApm: 396,
     holds: { total: 61, scheduled: null, lifting: 1, starting: 4 },
     drops: { total: 26, pending: 3 },
-    signups: { goal: 36, current: 43 },
+    signups: { goal: 36, current: 46, trial: 41, nonTrial: 5 },
     pastDue: 16,
   },
   {
@@ -53,7 +56,7 @@ export const membershipData: CenterMembership[] = [
     bomApm: 407,
     holds: { total: 67, scheduled: null, lifting: 0, starting: null },
     drops: { total: 34, pending: 7 },
-    signups: { goal: 51, current: 44 },
+    signups: { goal: 51, current: 45, trial: 41, nonTrial: 4 },
     pastDue: 19,
   },
 ];

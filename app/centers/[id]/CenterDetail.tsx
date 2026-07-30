@@ -42,8 +42,14 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
               lifting: Number(values[5]),
             },
             drops: { total: Number(values[6]), pending: Number(values[7]) },
-            signups: { current: Number(values[8]), goal: Number(values[9]) },
+            signups: {
+              current: Number(values[8]),
+              goal: Number(values[9]),
+              trial: Number(values[13]),
+              nonTrial: Number(values[14]),
+            },
             pastDue: Number(values[10]),
+            reportDate: values[12],
           };
         }).filter((item) => item.center && Number.isFinite(item.signups.current));
         if (updated.length) setLiveMembershipData(updated);
@@ -89,6 +95,13 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const centerShowRate = pct(selected.showed, selected.scheduled) / 100;
   const showsNeeded = centerCloseRate ? Math.ceil(signupsNeeded / centerCloseRate) : 0;
   const scheduledNeeded = centerShowRate ? Math.ceil(showsNeeded / centerShowRate) : 0;
+  const dataThroughDate = membership?.reportDate
+    ? new Date(`${membership.reportDate}T12:00:00`).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Jul 29, 2026";
 
   const classRows = useMemo(() => {
     const rows = selected.classes.filter((row) => dayFilter === "All days" || row.day === dayFilter);
@@ -199,7 +212,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         </>}
 
         {section === "membership" && membership && <section className="panel membership-panel">
-          <div className="panel-bar membership-bar"><div><h3>MEMBERSHIP HEALTH</h3><span>Growth, retention, and account health</span></div><div className="membership-apm"><small>BOM ACTIVE PAYING MEMBERS</small><strong>{membership.bomApm}</strong></div></div>
+          <div className="panel-bar membership-bar"><div><h3>MEMBERSHIP HEALTH</h3><span>Report date {dataThroughDate} · reflects prior-day completed data</span></div><div className="membership-apm"><small>BOM ACTIVE PAYING MEMBERS</small><strong>{membership.bomApm}</strong></div></div>
           <div className="membership-current-row">
             <article><small>TOTAL MEMBERS</small><strong>{membership.totalMembers}</strong></article>
             <span>−</span><article><small>HOLDS</small><strong>{membership.holds.total}</strong></article>
@@ -212,6 +225,13 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             <div className="victory-protect"><small>PROTECT THE WIN</small><strong>{noSignupEomActive} projected APM</strong><span>−{holdsStarting} holds starting +{holdsLifting} lifting −{membership.drops.pending} pending drops · <b>{netVsBomAfterDrops >= 0 ? "+" : ""}{netVsBomAfterDrops} vs. BOM</b></span></div>
           </section>}
           <div className="membership-pace"><div><small>MONTHLY SIGN-UP PACE</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected by July 28</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{goalAchieved ? `${stretchRemaining} to the ${stretchGoal} stretch milestone` : `${Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining`}</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
+          <div className="signup-breakdown" aria-label="Month-to-date sign-up breakdown">
+            <article className="signup-total"><small>TOTAL SIGN-UPS MTD</small><strong>{membership.signups.current}</strong><span>All new memberships</span></article>
+            <span>=</span>
+            <article><small>TRIAL SIGN-UPS</small><strong>{membership.signups.trial}</strong><span>Signed from a trial</span></article>
+            <span>+</span>
+            <article><small>NON-TRIAL SIGN-UPS</small><strong>{membership.signups.nonTrial}</strong><span>Signed without a trial</span></article>
+          </div>
           <div className="membership-scenarios">
             <article className="eom-forecast no-signups"><small>IF NO ONE ELSE SIGNS UP</small><strong>{noSignupEomActive}</strong><span>{currentActivePaying} current − {holdsStarting} holds starting + {holdsLifting} lifting − {membership.drops.pending} pending drops</span></article>
             <article className="eom-forecast goal-scenario"><small>{goalAchieved ? `IF THE ${stretchGoal} MILESTONE IS HIT` : "IF THE SIGN-UP GOAL IS HIT"}</small><strong>{goalAchieved ? stretchEomActive : goalEomActive}</strong><span>{noSignupEomActive} after scheduled changes + {targetRemaining} more sign-ups</span></article>
