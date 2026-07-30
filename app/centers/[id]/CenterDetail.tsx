@@ -340,21 +340,20 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
               <article className="eom-forecast pace-scenario"><div className="scenario-label"><i>→</i><div><small>FORECAST</small><b>CURRENT SIGN-UP PACE</b></div></div><strong>{projectedEomActive}</strong><em>PROJECTED APM</em><span>{noSignupEomActive} floor + {projectedAdditionalSignups} projected sign-up{projectedAdditionalSignups === 1 ? "" : "s"}</span><mark>LIKELY OUTCOME</mark></article>
             </div>
           </section>
-          <div className="membership-forecast-grid">
-            <article className="trial-funnel-needed">
-              <small>WHAT IT TAKES TO HIT {goalAchieved ? stretchGoal : membership.signups.goal} SIGN-UPS</small>
-              {signupsNeeded > 0 ? <>
-                <div><b>{scheduledNeeded}</b><span>more trials<br />scheduled</span><em>→</em><b>{showsNeeded}</b><span>need to<br />show</span><em>→</em><b>{signupsNeeded}</b><span>need to<br />sign up</span></div>
-                <p>Based on the current {rate(selected.showed, selected.scheduled)} show rate and {rate(selected.closed, selected.showed)} close rate.</p>
-              </> : <div className="goal-achieved"><b>★</b><span>Original goal crushed<br /><strong>Next milestone: {stretchGoal} · {stretchRemaining} more · {signupsPerDay.toFixed(1)} per day</strong></span></div>}
-              <p className="daily-pace-note"><strong>{signupsPerDay.toFixed(1)} sign-ups per day</strong> needed over the final {DAYS_REMAINING} days to reach {goalAchieved ? `the ${stretchGoal} stretch milestone` : "goal"}.</p>
-            </article>
-          </div>
-          <div className="membership-grid">
-            <article className="membership-card hold-card"><small>CURRENT MEMBERSHIPS ON HOLD</small><div className="membership-main-value"><strong>{membership.holds.total}</strong></div><div className="membership-subgrid hold-movement"><div><span>Starting before EOM</span><b>{membership.holds.starting ?? "—"}</b></div><div><span>Lifting before EOM</span><b>{membership.holds.lifting}</b></div></div></article>
-            <article className="membership-card"><small>DROPS</small><div className="membership-main-value"><strong>{membership.drops.total}</strong><span>total</span></div><div className="drop-status"><strong>{membership.drops.pending}</strong><span>pending drops left to fall off</span></div></article>
-            <article className="membership-card past-due-card"><small>PAST-DUE MEMBERSHIPS</small><div className="membership-main-value"><strong>{membership.pastDue}</strong></div><p>members currently in past-due status</p></article>
-          </div>
+          <section className="membership-action-plan">
+            <div className="action-plan-heading"><div><small>FINAL-TWO-DAY ACTION PLAN</small><strong>{goalAchieved ? `Push to the ${stretchGoal}-signup milestone` : `Close the gap to ${membership.signups.goal} sign-ups`}</strong><span>Built from the official {rate(selected.showed, selected.scheduled)} show rate and {rate(selected.closed, selected.showed)} close rate</span></div><div><strong>{signupsPerDay.toFixed(1)}</strong><span>sign-ups<br />per day</span></div></div>
+            {signupsNeeded > 0
+              ? <div className="action-funnel"><article><small>SCHEDULE</small><strong>{scheduledNeeded}</strong><span>more trials</span></article><b>→</b><article><small>ATTEND</small><strong>{showsNeeded}</strong><span>need to show</span></article><b>→</b><article><small>SIGN</small><strong>{signupsNeeded}</strong><span>new members</span></article></div>
+              : <div className="action-celebration"><span>★</span><div><small>ORIGINAL GOAL ACHIEVED</small><strong>{stretchRemaining} more sign-up{stretchRemaining === 1 ? "" : "s"} unlock the {stretchGoal} milestone</strong></div></div>}
+          </section>
+          <section className="membership-watchlist">
+            <div className="watchlist-heading"><div><small>MEMBERSHIP WATCHLIST</small><strong>Items that can still move EOM APM</strong></div><span>Focus on the numbers requiring action</span></div>
+            <div className="watchlist-grid">
+              <article className="holds-watch"><i>H</i><div><small>CURRENTLY ON HOLD</small><strong>{membership.holds.total}</strong><span>{membership.holds.starting ?? "—"} starting · {membership.holds.lifting} lifting before EOM</span></div></article>
+              <article className="drops-watch"><i>D</i><div><small>PENDING DROPS</small><strong>{membership.drops.pending}</strong><span>{membership.drops.total} total drops MTD</span></div></article>
+              <article className="pastdue-watch"><i>!</i><div><small>PAST DUE</small><strong>{membership.pastDue}</strong><span>members requiring payment follow-up</span></div></article>
+            </div>
+          </section>
           {membership.holds.starting === null && <p className="membership-footnote">The number of holds starting before month-end is awaiting the next data update.</p>}
         </section>}
         {section === "membership" && !membership && <section className="empty-state"><strong>Membership data is coming soon.</strong><span>This center will populate when its membership report is added.</span></section>}
