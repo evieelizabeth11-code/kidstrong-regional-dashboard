@@ -327,10 +327,10 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           </section>
           <div className="signup-breakdown" aria-label="Month-to-date sign-up breakdown">
             <article className="signup-total"><small>TOTAL SIGN-UPS MTD</small><strong>{membership.signups.current}</strong><span>All new memberships</span></article>
-            <span>=</span>
-            <article><small>TRIAL SIGN-UPS</small><strong>{membership.signups.trial}</strong><span>Signed from a trial</span></article>
-            <span>+</span>
-            <article><small>NON-TRIAL SIGN-UPS</small><strong>{membership.signups.nonTrial}</strong><span>Signed without a trial</span></article>
+            <div className="signup-sources">
+              <article><div><small>TRIAL SIGN-UPS</small><span>Signed from a trial</span></div><strong>{membership.signups.trial}</strong></article>
+              <article><div><small>NON-TRIAL SIGN-UPS</small><span>Signed without a trial</span></div><strong>{membership.signups.nonTrial}</strong></article>
+            </div>
           </div>
           <div className="membership-scenarios">
             <article className="eom-forecast no-signups"><small>IF NO ONE ELSE SIGNS UP</small><strong>{noSignupEomActive}</strong><span>{currentActivePaying} current − {holdsStarting} holds starting + {holdsLifting} lifting − {membership.drops.pending} pending drops</span></article>

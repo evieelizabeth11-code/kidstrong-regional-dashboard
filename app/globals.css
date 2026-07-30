@@ -235,14 +235,17 @@ h1 { margin:0; font-size:clamp(34px,4vw,58px); line-height:1; letter-spacing:-.0
 .milestone-star.next.earned>span,.milestone-star.next small { color:#ac7bff; }
 .milestone-star.push.upcoming>span { color:#53d87a;filter:none;opacity:.42; }
 .milestone-star.next.upcoming>span { color:#ac7bff;filter:none;opacity:.42; }
-.signup-breakdown { display:grid;grid-template-columns:1.15fr auto 1fr auto 1fr;align-items:stretch;gap:8px;padding:14px;background:#020b20;border-top:1px solid var(--line);border-bottom:1px solid var(--line); }
-.signup-breakdown>span { align-self:center;color:#63779e;font-size:20px;font-weight:900; }
+.signup-breakdown { display:grid;grid-template-columns:1.15fr 1fr;align-items:stretch;gap:10px;padding:14px;background:#020b20;border-top:1px solid var(--line);border-bottom:1px solid var(--line); }
 .signup-breakdown article { background:#071d4b;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:16px; }
 .signup-breakdown article.signup-total { border-color:rgba(83,211,134,.5);background:linear-gradient(145deg,#0a2857,#071d4b); }
 .signup-breakdown small { display:block;color:#91a4ca;font-size:8px;font-weight:900;letter-spacing:.07em; }
 .signup-breakdown strong { display:block;color:white;font-size:32px;line-height:1;margin:8px 0 6px; }
 .signup-breakdown .signup-total strong { color:var(--green);font-size:38px; }
 .signup-breakdown article span { color:#91a4ca;font-size:8px; }
+.signup-sources { display:grid;grid-template-rows:1fr 1fr;gap:8px; }
+.signup-sources article { display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 14px; }
+.signup-sources article strong { flex:0 0 auto;font-size:23px;margin:0;color:#dfe9ff; }
+.signup-sources article span { display:block;margin-top:3px; }
 .membership-current-row { display:flex;align-items:stretch;gap:8px;padding:14px;background:#020b20;border-bottom:1px solid var(--line); }
 .membership-current-row>span { align-self:center;color:#63779e;font-size:18px;font-weight:900; }
 .membership-current-row article { flex:1;background:#071d4b;border-radius:8px;padding:14px; }
