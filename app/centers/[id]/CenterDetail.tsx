@@ -16,6 +16,7 @@ import { membershipData, type CenterMembership } from "../../membership-data";
 import { reports } from "../../trial-data";
 import { mergeOfficialTrialFeed, trialSourceComparisons, type TrialSourceComparison } from "../../trial-feed";
 import { teamTrialData } from "../../team-trial-data";
+import ReportingPeriodNav from "../../ReportingPeriodNav";
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
@@ -207,7 +208,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
     <main className="detail-page">
       <header className="navy-header brandless-header">
         <div className="header-title"><span>{sectionTitle}</span><strong>{selected.center.toUpperCase()}</strong></div>
-        <div className="date-lockup"><span className="calendar-icon">29</span><div><small>REPORTING WINDOW</small><strong>July 1 – July 29</strong></div></div>
+        <ReportingPeriodNav />
       </header>
 
       <div className="page-shell">

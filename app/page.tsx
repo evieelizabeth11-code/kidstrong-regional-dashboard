@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { callData, mergeCallFeedRows } from "./call-data";
 import { membershipData, type CenterMembership } from "./membership-data";
+import ReportingPeriodNav from "./ReportingPeriodNav";
 import RegionalLeaderboard from "./RegionalLeaderboard";
 import { reports } from "./trial-data";
 import { mergeOfficialTrialFeed } from "./trial-feed";
@@ -73,10 +74,7 @@ export default function Home() {
           <span>REGIONAL PERFORMANCE COMMAND CENTER</span>
           <strong>JULY 2026</strong>
         </div>
-        <div className="date-lockup">
-          <span className="calendar-icon">29</span>
-          <div><small>REPORTING WINDOW</small><strong>July 1 – July 29</strong></div>
-        </div>
+        <ReportingPeriodNav />
       </header>
 
       <div className="page-shell overview-shell">
