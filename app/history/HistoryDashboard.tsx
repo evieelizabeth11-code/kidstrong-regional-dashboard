@@ -22,6 +22,12 @@ type HistoryRow = {
 };
 
 const HISTORY_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000008&single=true&output=csv";
+const JULY_HISTORY_FALLBACK: HistoryRow[] = [
+  { snapshotDate: "2026-07-30", dataThrough: "2026-07-29", period: "2026-07", status: "IN PROGRESS", center: "Brick", totalMembers: 605, bomApm: 545, activePaying: 534, drops: 26, signups: 31, signupGoal: 60, scheduled: 148, attended: 89, closed: 31, callMinutes: 3085.013332 },
+  { snapshotDate: "2026-07-30", dataThrough: "2026-07-29", period: "2026-07", status: "IN PROGRESS", center: "Mount Laurel", totalMembers: 480, bomApm: 396, activePaying: 402, drops: 27, signups: 46, signupGoal: 36, scheduled: 129, attended: 81, closed: 41, callMinutes: 2937.039997 },
+  { snapshotDate: "2026-07-30", dataThrough: "2026-07-29", period: "2026-07", status: "IN PROGRESS", center: "Turnersville", totalMembers: 496, bomApm: 445, activePaying: 447, drops: 47, signups: 35, signupGoal: 50, scheduled: 91, attended: 60, closed: 32, callMinutes: 2641.319999 },
+  { snapshotDate: "2026-07-30", dataThrough: "2026-07-29", period: "2026-07", status: "IN PROGRESS", center: "Voorhees", totalMembers: 482, bomApm: 407, activePaying: 397, drops: 34, signups: 46, signupGoal: 51, scheduled: 127, attended: 72, closed: 42, callMinutes: 2719.146666 },
+];
 const pct = (top: number, bottom: number) => bottom ? (top / bottom) * 100 : 0;
 const periodLabel = (period: string) => {
   const [year, month] = period.split("-").map(Number);
@@ -29,7 +35,7 @@ const periodLabel = (period: string) => {
 };
 
 export default function HistoryDashboard() {
-  const [rows, setRows] = useState<HistoryRow[]>([]);
+  const [rows, setRows] = useState<HistoryRow[]>(JULY_HISTORY_FALLBACK);
   const [selectedPeriod, setSelectedPeriod] = useState("2026-07");
 
   useEffect(() => {
