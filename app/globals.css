@@ -352,6 +352,15 @@ footer { display:flex;justify-content:space-between;color:#8294b8;font-size:9px;
 .overview-call-goal i,.detail-call-progress i { display:block;height:8px;background:#020b20;border-radius:99px;overflow:hidden;margin:10px 0 8px; }
 .overview-call-goal i b,.detail-call-progress i b { display:block;height:100%;background:var(--green);border-radius:99px; }
 .overview-call-goal>small { color:#9fb0d2;font-size:8px; }
+.overview-call-goal.progress-behind i b,.center-section-card.progress-behind>i em,.call-goal-hero.progress-behind>i b { background:linear-gradient(90deg,#b91c1c,#ff5f5f); }
+.overview-call-goal.progress-close i b,.center-section-card.progress-close>i em,.call-goal-hero.progress-close>i b { background:linear-gradient(90deg,#d08a00,#ffd166); }
+.overview-call-goal.progress-goal i b,.center-section-card.progress-goal>i em,.call-goal-hero.progress-goal>i b { background:linear-gradient(90deg,#218c4a,#53d87a); }
+.overview-call-goal.progress-surpassed i,.center-section-card.progress-surpassed>i,.call-goal-hero.progress-surpassed>i { overflow:visible;box-shadow:0 0 16px rgba(83,216,122,.55); }
+.overview-call-goal.progress-surpassed i b,.center-section-card.progress-surpassed>i em,.call-goal-hero.progress-surpassed>i b { background:linear-gradient(90deg,#53d87a,#6de7ff,#53d87a);background-size:200% 100%;box-shadow:0 0 12px rgba(109,231,255,.65); }
+.overview-call-goal.progress-behind>div strong,.call-goal-hero.progress-behind strong { color:#ff6b6b; }
+.overview-call-goal.progress-close>div strong,.call-goal-hero.progress-close strong { color:#ffd166; }
+.overview-call-goal.progress-goal>div strong,.overview-call-goal.progress-surpassed>div strong,.call-goal-hero.progress-goal strong,.call-goal-hero.progress-surpassed strong { color:#53d87a; }
+.center-section-card.progress-surpassed,.call-goal-hero.progress-surpassed { border-color:rgba(109,231,255,.7);box-shadow:0 0 24px rgba(83,216,122,.13); }
 .detail-nav { display:flex;justify-content:space-between;align-items:center;margin-bottom:28px; }
 .detail-nav>a { color:var(--green);font-weight:800;font-size:11px; }
 .detail-nav>div { display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end; }

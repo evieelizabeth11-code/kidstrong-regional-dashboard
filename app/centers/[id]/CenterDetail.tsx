@@ -20,6 +20,8 @@ const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
 const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
 const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor" : "attention");
+const progressTone = (value: number) =>
+  value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
 const DAYS_REMAINING = 3;
 const MEMBERSHIP_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
@@ -231,7 +233,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             <Link href={`/centers/${centerId}/trials`} className="center-section-card">
               <div><small>TRIALS</small><strong>{selected.scheduled} scheduled</strong><span>{selected.closed} closed</span></div><b>View trial details →</b>
             </Link>
-            <Link href={`/centers/${centerId}/calls`} className="center-section-card">
+            <Link href={`/centers/${centerId}/calls`} className={`center-section-card ${progressTone(callGoalPct)}`}>
               <div><small>CALLS</small><strong>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} minutes</strong><span>{callGoalPct.toFixed(1)}% of 3,000-minute goal</span></div><i><em style={{ width: `${Math.min(callGoalPct, 100)}%` }} /></i><b>View call details →</b>
             </Link>
             <Link href={`/centers/${centerId}/membership`} className={`center-section-card ${!membership ? "unavailable" : ""}`}>
@@ -265,7 +267,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         </>}
 
         {section === "calls" && <>
-          <section className="call-goal-hero"><div><small>MONTHLY CALL-TIME GOAL</small><strong>{callGoalPct.toFixed(1)}%</strong><span>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} of 3,000 minutes · {Math.max(0, MONTHLY_CALL_MINUTE_GOAL - selectedCalls.totalMinutes).toLocaleString(undefined, { maximumFractionDigits: 0 })} remaining</span></div><i><b style={{ width: `${Math.min(callGoalPct, 100)}%` }} /></i></section>
+          <section className={`call-goal-hero ${progressTone(callGoalPct)}`}><div><small>{callGoalPct > 100 ? "MONTHLY GOAL SURPASSED ★" : callGoalPct >= 100 ? "MONTHLY GOAL HIT ✓" : "MONTHLY CALL-TIME GOAL"}</small><strong>{callGoalPct.toFixed(1)}%</strong><span>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} of 3,000 minutes · {callGoalPct >= 100 ? `${(selectedCalls.totalMinutes - MONTHLY_CALL_MINUTE_GOAL).toLocaleString(undefined, { maximumFractionDigits: 0 })} above goal` : `${(MONTHLY_CALL_MINUTE_GOAL - selectedCalls.totalMinutes).toLocaleString(undefined, { maximumFractionDigits: 0 })} remaining`}</span></div><i><b style={{ width: `${Math.min(callGoalPct, 100)}%` }} /></i></section>
           <section className="call-detail-strip">
             <div><small>TOTAL CALL TIME</small><strong>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</strong><span>{selectedCalls.totalHours.toFixed(1)} hours</span></div>
             <div><small>AVERAGE CALL LENGTH</small><strong>{selectedCalls.avgMinutes.toFixed(2)} min</strong><span>across {selectedCalls.totalCalls.toLocaleString()} calls</span></div>
