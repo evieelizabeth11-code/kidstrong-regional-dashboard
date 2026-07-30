@@ -693,6 +693,9 @@ footer { font-size:11px; }
   .history-center-grid { grid-template-columns:1fr 1fr; }
 }
 @media(max-width:760px){
+  .navy-header.brandless-header { grid-template-columns:1fr; }
+  .brandless-header .header-title { text-align:center; }
+  .reporting-period-area { justify-items:center; }
   .reporting-period-nav>div { display:none; }
   .history-hero { grid-template-columns:1fr;align-items:start; }
   .history-hero label { min-width:0; }
