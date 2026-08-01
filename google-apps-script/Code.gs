@@ -59,8 +59,13 @@ function processCallReport() {
     return Utilities.formatDate(row[0], timezone, 'yyyy-MM-dd') !== reportKey;
   });
 
+  // Daily Calls is a native Google Sheets table. Table-backed ranges reject
+  // some actions that span multiple columns, so clear and write one column at
+  // a time. This also makes the menu action independent of the active cell.
   if (lastDailyRow >= 5) {
-    dailySheet.getRange(5, 1, lastDailyRow - 4, 10).clearContent();
+    for (let column = 1; column <= 10; column += 1) {
+      dailySheet.getRange(5, column, lastDailyRow - 4, 1).clearContent();
+    }
   }
 
   const finalRows = preservedRows.concat(outputRows).sort((a, b) => {
@@ -69,9 +74,14 @@ function processCallReport() {
     return aTime - bTime;
   });
 
-  dailySheet.getRange(5, 1, finalRows.length, 10).setValues(finalRows);
+  for (let column = 1; column <= 10; column += 1) {
+    const columnValues = finalRows.map(row => [row[column - 1]]);
+    dailySheet.getRange(5, column, finalRows.length, 1).setValues(columnValues);
+  }
   dailySheet.getRange(5, 1, finalRows.length, 1).setNumberFormat('yyyy-mm-dd');
-  dailySheet.getRange(5, 4, finalRows.length, 7).setNumberFormat('0.00');
+  for (let column = 4; column <= 10; column += 1) {
+    dailySheet.getRange(5, column, finalRows.length, 1).setNumberFormat('0.00');
+  }
   SpreadsheetApp.flush();
 
   const totalMinutes = outputRows.reduce((sum, row) => sum + Number(row[9] || 0), 0);
