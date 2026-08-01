@@ -135,7 +135,7 @@ export default function Home() {
           })}
         </section>
 
-        <footer>Official center trial totals: Daily Scorecard · Coaching detail: Trial Tracker <span>Dashboard updated through July 29, 2026</span></footer>
+        <footer>Official center trial totals: Daily Scorecard · Coaching detail: Trial Tracker <span>Dashboard updated through July 31, 2026</span></footer>
       </div>
     </main>
   );
