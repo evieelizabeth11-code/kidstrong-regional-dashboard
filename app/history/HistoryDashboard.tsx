@@ -22,11 +22,15 @@ type HistoryRow = {
 };
 
 const HISTORY_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000008&single=true&output=csv";
-const JULY_HISTORY_FALLBACK: HistoryRow[] = [
+const HISTORY_FALLBACK: HistoryRow[] = [
   { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Brick", totalMembers: 608, bomApm: 537, activePaying: 536, drops: 27, signups: 31, signupGoal: 60, scheduled: 161, attended: 98, closed: 33, callMinutes: 3362.73 },
   { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Mount Laurel", totalMembers: 480, bomApm: 402, activePaying: 402, drops: 27, signups: 46, signupGoal: 36, scheduled: 130, attended: 82, closed: 41, callMinutes: 3157.34 },
   { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Turnersville", totalMembers: 498, bomApm: 447, activePaying: 447, drops: 47, signups: 35, signupGoal: 50, scheduled: 96, attended: 64, closed: 34, callMinutes: 2931 },
   { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Voorhees", totalMembers: 481, bomApm: 407, activePaying: 404, drops: 34, signups: 46, signupGoal: 51, scheduled: 138, attended: 81, closed: 45, callMinutes: 2866.31 },
+  { snapshotDate: "2026-08-02", dataThrough: "2026-08-01", period: "2026-08", status: "IN PROGRESS", center: "Brick", totalMembers: 608, bomApm: 537, activePaying: 536, drops: 27, signups: 0, signupGoal: 35, scheduled: 8, attended: 3, closed: 0, callMinutes: 86.3 },
+  { snapshotDate: "2026-08-02", dataThrough: "2026-08-01", period: "2026-08", status: "IN PROGRESS", center: "Mount Laurel", totalMembers: 481, bomApm: 402, activePaying: 402, drops: 23, signups: 1, signupGoal: 36, scheduled: 5, attended: 4, closed: 1, callMinutes: 107.63 },
+  { snapshotDate: "2026-08-02", dataThrough: "2026-08-01", period: "2026-08", status: "IN PROGRESS", center: "Turnersville", totalMembers: 500, bomApm: 447, activePaying: 446, drops: 45, signups: 2, signupGoal: 52, scheduled: 4, attended: 1, closed: 1, callMinutes: 48.13 },
+  { snapshotDate: "2026-08-02", dataThrough: "2026-08-01", period: "2026-08", status: "IN PROGRESS", center: "Voorhees", totalMembers: 482, bomApm: 404, activePaying: 404, drops: 44, signups: 1, signupGoal: 52, scheduled: 4, attended: 3, closed: 1, callMinutes: 28.88 },
 ];
 const pct = (top: number, bottom: number) => bottom ? (top / bottom) * 100 : 0;
 const periodLabel = (period: string) => {
@@ -35,7 +39,7 @@ const periodLabel = (period: string) => {
 };
 
 export default function HistoryDashboard() {
-  const [rows, setRows] = useState<HistoryRow[]>(JULY_HISTORY_FALLBACK);
+  const [rows, setRows] = useState<HistoryRow[]>(HISTORY_FALLBACK);
   const [selectedPeriod, setSelectedPeriod] = useState("2026-07");
 
   useEffect(() => {
@@ -137,7 +141,7 @@ export default function HistoryDashboard() {
       </section>
 
       <section className="history-coming">
-        <div><span>↗</span><div><small>MONTH-OVER-MONTH TRENDS</small><strong>Ready for the first August snapshot</strong><p>Once August begins, this section will compare sign-ups, show rate, close rate, talk time, and active paying membership against July.</p></div></div>
+        <div><span>↗</span><div><small>AUGUST TRACKING IS LIVE</small><strong>The first August snapshot is now retained</strong><p>August is being saved as an in-progress month through EOD August 1. July remains frozen, and the completed August month will support the first full month-over-month comparison.</p></div></div>
       </section>
     </div>
   </main>;
