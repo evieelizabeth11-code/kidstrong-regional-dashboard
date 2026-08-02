@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function ReportingPeriodNav() {
   return <div className="reporting-period-area">
     <div className="reporting-period-nav">
-      <div><small>REPORTING PERIOD</small><strong>July 2026</strong></div>
+      <div><small>REPORTING PERIOD</small><strong>August 2026</strong></div>
       <span>IN PROGRESS</span>
       <Link href="/history">View history →</Link>
       <Link className="daily-upload-link" href="/admin/scorecard">Daily upload</Link>

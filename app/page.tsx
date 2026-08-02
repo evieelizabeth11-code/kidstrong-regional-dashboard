@@ -76,7 +76,7 @@ export default function Home() {
       <header className="navy-header brandless-header">
         <div className="header-title">
           <span>REGIONAL PERFORMANCE COMMAND CENTER</span>
-          <strong>JULY 2026</strong>
+          <strong>AUGUST 2026</strong>
         </div>
         <ReportingPeriodNav />
       </header>
@@ -116,7 +116,7 @@ export default function Home() {
             return (
               <Link className="overview-center-card" href={`/centers/${report.id}`} key={report.id}>
                 <div className="overview-card-top">
-                  <div><small>JULY 2026</small><h2>{report.center}</h2></div>
+                  <div><small>AUGUST 2026</small><h2>{report.center}</h2></div>
                   <span>OPEN CENTER <b>→</b></span>
                 </div>
                 <div className="overview-card-metrics">
@@ -135,7 +135,7 @@ export default function Home() {
           })}
         </section>
 
-        <footer>Official center trial totals: Daily Scorecard · Coaching detail: Trial Tracker <span>Dashboard updated through July 31, 2026</span></footer>
+        <footer>Official center trial totals: Daily Scorecard · Coaching detail: Trial Tracker <span>August reporting through EOD August 1, 2026</span></footer>
       </div>
     </main>
   );

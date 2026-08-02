@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { callData, mergeCallFeedRows } from "../../call-data";
-import { callPersonData } from "../../call-person-data";
+import { callPersonData, type PersonCalls } from "../../call-person-data";
 import {
   yesterdayCalls,
   yesterdayPersonCalls,
@@ -15,7 +15,7 @@ import {
 import { membershipData, type CenterMembership } from "../../membership-data";
 import { reports } from "../../trial-data";
 import { mergeOfficialTrialFeed, trialSourceComparisons, type TrialSourceComparison } from "../../trial-feed";
-import { teamTrialData } from "../../team-trial-data";
+import { teamTrialData, type TeamTrialPerformance } from "../../team-trial-data";
 import ReportingPeriodNav from "../../ReportingPeriodNav";
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -26,7 +26,6 @@ const progressTone = (value: number) =>
   value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
 const CALL_PUSH_GOALS = [3500, 4000];
-const DAYS_REMAINING = 2;
 const MEMBERSHIP_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
 type Section = "overview" | "trials" | "calls" | "membership";
 
@@ -40,7 +39,9 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const [liveYesterdayTrials, setLiveYesterdayTrials] = useState<DailyTrials[]>(yesterdayTrials);
   const [liveReports, setLiveReports] = useState(reports);
   const [trialComparisons, setTrialComparisons] = useState<TrialSourceComparison[]>([]);
-  const [snapshotDate, setSnapshotDate] = useState("Wednesday, July 29");
+  const [livePeople, setLivePeople] = useState<PersonCalls[]>(callPersonData);
+  const [liveTeamTrials, setLiveTeamTrials] = useState<TeamTrialPerformance[]>(teamTrialData);
+  const [snapshotDate, setSnapshotDate] = useState("Saturday, August 1");
 
   useEffect(() => {
     const loadMembershipData = async () => {
@@ -54,6 +55,8 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         const dailyCalls: DailyCalls[] = [];
         const dailyPeople: DailyPersonCalls[] = [];
         const dailyTrials: DailyTrials[] = [];
+        const mtdPeople: PersonCalls[] = [];
+        const mtdTeamTrials: TeamTrialPerformance[] = [];
         let latestSnapshotSerial = 0;
         const updated = rows.map((row) => {
           const values = row.split(",").map((value) => value.replace(/^"|"$/g, "").trim());
@@ -94,6 +97,19 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
               closed: Number(trialClosed) || 0,
             });
           }
+          (values[36] ?? "").split(";").forEach((entry) => {
+            const [person, minutes, calls, inbound, outbound] = entry.split("|");
+            if (person && person !== "Shared / unassigned" && Number(minutes) > 0) {
+              const totalCalls = Number(calls) || 0;
+              mtdPeople.push({ center: values[0], person, totalMinutes: Number(minutes), totalCalls, inboundCalls: Number(inbound) || 0, outboundCalls: Number(outbound) || 0, avgMinutes: totalCalls ? Number(minutes) / totalCalls : 0 });
+            }
+          });
+          (values[37] ?? "").split(";").forEach((entry) => {
+            const [person, booked, showed, closed] = entry.split("|");
+            if (person && Number(booked) > 0) {
+              mtdTeamTrials.push({ center: values[0], person, booked: Number(booked), closed: Number(closed) || 0, showRate: Number(booked) ? Math.round((Number(showed) / Number(booked)) * 100) : null, closeRate: Number(showed) ? Math.round((Number(closed) / Number(showed)) * 100) : null });
+            }
+          });
           return {
             center: values[0],
             totalMembers: Number(values[1]),
@@ -119,6 +135,8 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         if (dailyCalls.length) setLiveYesterdayCalls(dailyCalls);
         if (dailyPeople.length) setLiveYesterdayPeople(dailyPeople);
         if (dailyTrials.length) setLiveYesterdayTrials(dailyTrials);
+        if (mtdPeople.length) setLivePeople(mtdPeople);
+        if (mtdTeamTrials.length) setLiveTeamTrials(mtdTeamTrials);
         if (latestSnapshotSerial) {
           const snapshot = new Date(Date.UTC(1899, 11, 30) + latestSnapshotSerial * 86400000);
           setSnapshotDate(snapshot.toLocaleDateString("en-US", {
@@ -144,8 +162,8 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
       && trialComparison.official.closed === trialComparison.tracker.closed
     : true;
   const selectedCalls = liveCallData.find((item) => item.center === selected.center) ?? liveCallData[0];
-  const people = callPersonData.filter((item) => item.center === selected.center && item.totalMinutes > 0);
-  const teamTrials = teamTrialData.filter((item) => item.center === selected.center);
+  const people = livePeople.filter((item) => item.center === selected.center && item.totalMinutes > 0);
+  const teamTrials = liveTeamTrials.filter((item) => item.center === selected.center);
   const membership = liveMembershipData.find((item) => item.center === selected.center);
   const yesterdayCall = liveYesterdayCalls.find((item) => item.center === selected.center);
   const yesterdayTrial = liveYesterdayTrials.find((item) => item.center === selected.center);
@@ -159,13 +177,19 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
     ?? Math.ceil((selectedCalls.totalMinutes + 1) / 500) * 500;
   const signupGoalPct = membership ? pct(membership.signups.current, membership.signups.goal) : 0;
   const attritionPct = membership ? pct(membership.drops.total, membership.bomApm) : 0;
-  const expectedSignups = membership ? membership.signups.goal * (29 / 31) : 0;
+  const reportDate = membership?.reportDate ? new Date(`${membership.reportDate}T12:00:00`) : new Date("2026-08-02T12:00:00");
+  const dataThrough = new Date(reportDate);
+  dataThrough.setDate(dataThrough.getDate() - 1);
+  const daysInMonth = new Date(dataThrough.getFullYear(), dataThrough.getMonth() + 1, 0).getDate();
+  const elapsedDays = Math.max(1, dataThrough.getDate());
+  const daysRemaining = Math.max(1, daysInMonth - elapsedDays);
+  const expectedSignups = membership ? membership.signups.goal * (elapsedDays / daysInMonth) : 0;
   const goalAchieved = membership ? membership.signups.current >= membership.signups.goal : false;
   const paceLabel = membership ? (goalAchieved ? "Goal crushed" : membership.signups.current >= expectedSignups - 1 ? "On pace" : "Behind pace") : "";
   const currentActivePaying = membership ? membership.totalMembers - membership.holds.total - membership.pastDue : 0;
   const holdsStarting = membership?.holds.starting ?? 0;
   const holdsLifting = membership?.holds.lifting ?? 0;
-  const projectedSignups = membership ? Math.round((membership.signups.current / 28) * 31) : 0;
+  const projectedSignups = membership ? Math.round((membership.signups.current / elapsedDays) * daysInMonth) : 0;
   const projectedAdditionalSignups = membership ? Math.max(0, projectedSignups - membership.signups.current) : 0;
   const noSignupEomActive = membership ? currentActivePaying - holdsStarting + holdsLifting - membership.drops.pending : 0;
   const goalEomActive = membership ? noSignupEomActive + Math.max(0, membership.signups.goal - membership.signups.current) : 0;
@@ -180,7 +204,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const stretchRemaining = membership ? Math.max(0, stretchGoal - membership.signups.current) : 0;
   const stretchEomActive = membership ? noSignupEomActive + stretchRemaining : 0;
   const targetRemaining = goalAchieved ? stretchRemaining : signupsNeeded;
-  const signupsPerDay = targetRemaining / DAYS_REMAINING;
+  const signupsPerDay = targetRemaining / daysRemaining;
   const centerCloseRate = pct(selected.closed, selected.showed) / 100;
   const centerShowRate = pct(selected.showed, selected.scheduled) / 100;
   const showsNeeded = centerCloseRate ? Math.ceil(signupsNeeded / centerCloseRate) : 0;
@@ -191,7 +215,8 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         day: "numeric",
         year: "numeric",
       })
-    : "Jul 29, 2026";
+    : "Aug 2, 2026";
+  const dataThroughLabel = dataThrough.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   const classRows = useMemo(() => {
     const rows = selected.classes.filter((row) => dayFilter === "All days" || row.day === dayFilter);
@@ -224,7 +249,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         </nav>
 
         <section className="detail-hero">
-          <div><p className="kicker">JULY 2026 · {sectionTitle}</p><h1>{selected.center}</h1><p>{selected.dateRange}</p></div>
+          <div><p className="kicker">AUGUST 2026 · {sectionTitle}</p><h1>{selected.center}</h1><p>{selected.dateRange}</p></div>
           <div className="center-switcher">{liveReports.map((report) => <Link className={report.id === centerId ? "active" : ""} href={`/centers/${report.id}${section === "overview" ? "" : `/${section}`}`} key={report.id}>{report.center}</Link>)}</div>
         </section>
 
@@ -244,9 +269,9 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           <section className="yesterday-snapshot">
             <div className="snapshot-heading"><div><small>YESTERDAY&apos;S SNAPSHOT · TRIAL TRACKER</small><strong>{snapshotDate}</strong></div><span>Operational detail for reconciliation</span></div>
             <div className="snapshot-grid">
-              <article><small>TRIALS SCHEDULED</small><strong>{yesterdayTrial?.scheduled ?? "—"}</strong><span>{yesterdayTrial ? "yesterday's trial volume" : "awaiting July 29 results"}</span></article>
-              <article><small>TRIALS SHOWED</small><strong>{yesterdayTrial?.showed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.showed, yesterdayTrial.scheduled)} show rate` : "awaiting July 29 results"}</span></article>
-              <article><small>TRIALS SIGNED</small><strong>{yesterdayTrial?.closed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.closed, yesterdayTrial.showed)} close rate` : "awaiting July 29 results"}</span></article>
+              <article><small>TRIALS SCHEDULED</small><strong>{yesterdayTrial?.scheduled ?? "—"}</strong><span>{yesterdayTrial ? "yesterday's trial volume" : "awaiting yesterday's results"}</span></article>
+              <article><small>TRIALS SHOWED</small><strong>{yesterdayTrial?.showed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.showed, yesterdayTrial.scheduled)} show rate` : "awaiting yesterday's results"}</span></article>
+              <article><small>TRIALS SIGNED</small><strong>{yesterdayTrial?.closed ?? "—"}</strong><span>{yesterdayTrial ? `${rate(yesterdayTrial.closed, yesterdayTrial.showed)} close rate` : "awaiting yesterday's results"}</span></article>
               <article><small>TOTAL TALK TIME</small><strong>{yesterdayCall?.totalMinutes.toFixed(1) ?? "—"} <em>min</em></strong><span>{yesterdayCall?.totalCalls ?? 0} calls · {yesterdayCall?.outboundCalls ?? 0} outbound</span></article>
             </div>
             <div className="snapshot-people">
@@ -329,7 +354,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             <span>−</span><article><small>PAST DUE</small><strong>{membership.pastDue}</strong></article>
             <span>=</span><article className="active-paying-now"><small>CURRENT ACTIVE PAYING</small><strong>{currentActivePaying}</strong></article>
           </div>
-          <div className={`membership-pace ${progressTone(signupGoalPct)}`}><div><small>{signupGoalPct > 100 ? "MONTHLY GOAL SURPASSED ★" : signupGoalPct >= 100 ? "MONTHLY GOAL HIT ✓" : "MONTHLY SIGN-UP PACE"}</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected through July 29</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{goalAchieved ? `${stretchRemaining} to the ${stretchGoal} stretch milestone` : `${Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining`}</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
+          <div className={`membership-pace ${progressTone(signupGoalPct)}`}><div><small>{signupGoalPct > 100 ? "MONTHLY GOAL SURPASSED ★" : signupGoalPct >= 100 ? "MONTHLY GOAL HIT ✓" : "MONTHLY SIGN-UP PACE"}</small><strong>{paceLabel}</strong><span>{membership.signups.current} actual vs. {expectedSignups.toFixed(1)} expected through {dataThroughLabel}</span></div><div><strong>{membership.signups.current} <small>of {membership.signups.goal}</small></strong><span>{goalAchieved ? `${stretchRemaining} to the ${stretchGoal} stretch milestone` : `${Math.max(0, membership.signups.goal - membership.signups.current)} sign-ups remaining`}</span></div><i><b style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i></div>
           <section className="signup-milestones" aria-label="Sign-up milestone ladder">
             {[
               { goal: membership.signups.goal, label: "ORIGINAL GOAL", tone: "original" },
@@ -352,7 +377,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             </div>
           </div>
           <section className="scenario-section">
-            <div className="scenario-heading"><div><small>END-OF-MONTH OUTLOOK</small><strong>Projected active-paying members</strong></div><span>Three clear outcomes based on the final two days</span></div>
+            <div className="scenario-heading"><div><small>END-OF-MONTH OUTLOOK</small><strong>Projected active-paying members</strong></div><span>Three clear outcomes based on August data</span></div>
             <div className="membership-scenarios">
               <article className="eom-forecast no-signups"><div className="scenario-label"><i>↓</i><div><small>FLOOR</small><b>NO MORE SIGN-UPS</b></div></div><strong>{noSignupEomActive}</strong><em>PROJECTED APM</em><span>{currentActivePaying} today → scheduled holds and drops applied</span></article>
               <article className="eom-forecast goal-scenario"><div className="scenario-label"><i>★</i><div><small>TARGET</small><b>{goalAchieved ? `REACH ${stretchGoal} SIGN-UPS` : "HIT THE SIGN-UP GOAL"}</b></div></div><strong>{goalAchieved ? stretchEomActive : goalEomActive}</strong><em>PROJECTED APM</em><span>{noSignupEomActive} floor + {targetRemaining} additional sign-up{targetRemaining === 1 ? "" : "s"}</span></article>
@@ -360,7 +385,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             </div>
           </section>
           <section className="membership-action-plan">
-            <div className="action-plan-heading"><div><small>FINAL-TWO-DAY ACTION PLAN</small><strong>{goalAchieved ? `Push to the ${stretchGoal}-signup milestone` : `Close the gap to ${membership.signups.goal} sign-ups`}</strong><span>Built from the official {rate(selected.showed, selected.scheduled)} show rate and {rate(selected.closed, selected.showed)} close rate</span></div><div><strong>{signupsPerDay.toFixed(1)}</strong><span>sign-ups<br />per day</span></div></div>
+            <div className="action-plan-heading"><div><small>{daysRemaining}-DAY ACTION PLAN</small><strong>{goalAchieved ? `Push to the ${stretchGoal}-signup milestone` : `Close the gap to ${membership.signups.goal} sign-ups`}</strong><span>Built from the official {rate(selected.showed, selected.scheduled)} show rate and {rate(selected.closed, selected.showed)} close rate</span></div><div><strong>{signupsPerDay.toFixed(1)}</strong><span>sign-ups<br />per day</span></div></div>
             {signupsNeeded > 0
               ? <div className="action-funnel"><article><small>SCHEDULE</small><strong>{scheduledNeeded}</strong><span>more trials</span></article><b>→</b><article><small>ATTEND</small><strong>{showsNeeded}</strong><span>need to show</span></article><b>→</b><article><small>SIGN</small><strong>{signupsNeeded}</strong><span>new members</span></article></div>
               : <div className="action-celebration"><span>★</span><div><small>ORIGINAL GOAL ACHIEVED</small><strong>{stretchRemaining} more sign-up{stretchRemaining === 1 ? "" : "s"} unlock the {stretchGoal} milestone</strong></div></div>}
@@ -377,7 +402,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         </section>}
         {section === "membership" && !membership && <section className="empty-state"><strong>Membership data is coming soon.</strong><span>This center will populate when its membership report is added.</span></section>}
 
-        <footer>Sources: July Trial Performance Report and Calls by Softphone User <span>Dashboard updated July 29, 2026</span></footer>
+        <footer>Sources: Daily Scorecard, Trial Tracker, Membership Health, and Podium <span>August reporting through EOD August 1, 2026</span></footer>
       </div>
     </main>
   );

@@ -73,7 +73,7 @@ export default function RegionalLeaderboard() {
   return <section className="regional-leaderboard">
     <div className="leaderboard-heading">
       <div><p className="kicker">REGIONAL LEADERBOARD</p><h2>Who&apos;s setting the pace?</h2></div>
-      <span>Live standings · July 2026</span>
+      <span>Live standings · August 2026</span>
     </div>
     <div className="leaderboard-grid">
       {categories.map((category) => <article className="leaderboard-card" key={category.label}>
