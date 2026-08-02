@@ -26,7 +26,16 @@ function processCallReport() {
     return;
   }
 
-  const importRows = importSheet.getRange(5, 1, lastImportRow - 4, 25).getValues();
+  const rawImportRows = importSheet.getRange(5, 1, lastImportRow - 4, 25).getValues();
+  // A shorter CSV can leave rows from yesterday's import below the new grand
+  // total. Stop at the current report's grand-total row so stale rows can
+  // never be processed a second time.
+  const grandTotalIndex = rawImportRows.findIndex(row =>
+    String(row[0] || '').trim() === 'Total' && String(row[1] || '').trim() === ''
+  );
+  const importRows = grandTotalIndex >= 0
+    ? rawImportRows.slice(0, grandTotalIndex + 1)
+    : rawImportRows;
   const outputRows = importRows
     .filter(row => Number(row[23]) === 1 && row[21] && row[22])
     .map(row => [
