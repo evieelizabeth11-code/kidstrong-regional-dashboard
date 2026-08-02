@@ -23,10 +23,10 @@ type HistoryRow = {
 
 const HISTORY_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000008&single=true&output=csv";
 const JULY_HISTORY_FALLBACK: HistoryRow[] = [
-  { snapshotDate: "2026-07-30", dataThrough: "2026-07-29", period: "2026-07", status: "IN PROGRESS", center: "Brick", totalMembers: 605, bomApm: 545, activePaying: 534, drops: 26, signups: 31, signupGoal: 60, scheduled: 148, attended: 89, closed: 31, callMinutes: 3085.013332 },
-  { snapshotDate: "2026-07-30", dataThrough: "2026-07-29", period: "2026-07", status: "IN PROGRESS", center: "Mount Laurel", totalMembers: 480, bomApm: 396, activePaying: 402, drops: 27, signups: 46, signupGoal: 36, scheduled: 129, attended: 81, closed: 41, callMinutes: 2937.039997 },
-  { snapshotDate: "2026-07-30", dataThrough: "2026-07-29", period: "2026-07", status: "IN PROGRESS", center: "Turnersville", totalMembers: 496, bomApm: 445, activePaying: 447, drops: 47, signups: 35, signupGoal: 50, scheduled: 91, attended: 60, closed: 32, callMinutes: 2641.319999 },
-  { snapshotDate: "2026-07-30", dataThrough: "2026-07-29", period: "2026-07", status: "IN PROGRESS", center: "Voorhees", totalMembers: 482, bomApm: 407, activePaying: 397, drops: 34, signups: 46, signupGoal: 51, scheduled: 127, attended: 72, closed: 42, callMinutes: 2719.146666 },
+  { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Brick", totalMembers: 608, bomApm: 537, activePaying: 536, drops: 27, signups: 31, signupGoal: 60, scheduled: 161, attended: 98, closed: 33, callMinutes: 3362.73 },
+  { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Mount Laurel", totalMembers: 480, bomApm: 402, activePaying: 402, drops: 27, signups: 46, signupGoal: 36, scheduled: 130, attended: 82, closed: 41, callMinutes: 3157.34 },
+  { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Turnersville", totalMembers: 498, bomApm: 447, activePaying: 447, drops: 47, signups: 35, signupGoal: 50, scheduled: 96, attended: 64, closed: 34, callMinutes: 2931 },
+  { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Voorhees", totalMembers: 481, bomApm: 407, activePaying: 404, drops: 34, signups: 46, signupGoal: 51, scheduled: 138, attended: 81, closed: 45, callMinutes: 2866.31 },
 ];
 const pct = (top: number, bottom: number) => bottom ? (top / bottom) * 100 : 0;
 const periodLabel = (period: string) => {
@@ -94,6 +94,7 @@ export default function HistoryDashboard() {
   }), { scheduled: 0, attended: 0, closed: 0, signups: 0, callMinutes: 0, activePaying: 0, drops: 0, bomApm: 0 });
   const status = selectedRows[0]?.status ?? "IN PROGRESS";
   const dataThrough = selectedRows[0]?.dataThrough || "2026-07-29";
+  const statusForPeriod = (period: string) => rows.some((row) => row.period === period && row.status === "FINAL") ? "final" : "in progress";
 
   return <main className="history-page">
     <header className="navy-header brandless-header">
@@ -103,7 +104,7 @@ export default function HistoryDashboard() {
     <div className="page-shell history-shell">
       <section className="history-hero">
         <div><p className="kicker">MONTHLY ARCHIVE</p><h1>Performance that stays <span>accessible.</span></h1><p>Every dated center snapshot is retained here so future updates cannot replace prior results.</p></div>
-        <label><span>REPORTING PERIOD</span><select value={selectedPeriod} onChange={(event) => setSelectedPeriod(event.target.value)}>{periods.length ? periods.map((period) => <option value={period} key={period}>{periodLabel(period)} · {rows.find((row) => row.period === period)?.status.toLowerCase()}</option>) : <option>July 2026 · loading</option>}</select></label>
+        <label><span>REPORTING PERIOD</span><select value={selectedPeriod} onChange={(event) => setSelectedPeriod(event.target.value)}>{periods.length ? periods.map((period) => <option value={period} key={period}>{periodLabel(period)} · {statusForPeriod(period)}</option>) : <option>July 2026 · loading</option>}</select></label>
       </section>
 
       <section className="history-status">
