@@ -15,7 +15,7 @@ const progressTone = (value: number) =>
   value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
 const CALL_PUSH_GOALS = [3500, 4000];
-const DASHBOARD_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
+const DASHBOARD_FEED_URL = "/api/dashboard-feed";
 
 export default function Home() {
   const [liveCallData, setLiveCallData] = useState(callData);
@@ -25,7 +25,7 @@ export default function Home() {
   useEffect(() => {
     const loadCalls = async () => {
       try {
-        const response = await fetch(`${DASHBOARD_FEED_URL}&t=${Date.now()}`, { cache: "no-store" });
+        const response = await fetch(`${DASHBOARD_FEED_URL}?t=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) return;
         const rows = (await response.text()).trim().split(/\r?\n/).slice(1);
         setLiveCallData(mergeCallFeedRows(callData, rows));
@@ -70,6 +70,20 @@ export default function Home() {
   const totalDrops = liveMembershipData.reduce((sum, item) => sum + item.drops.total, 0);
   const totalBomApm = liveMembershipData.reduce((sum, item) => sum + item.bomApm, 0);
   const regionalAttrition = pct(totalDrops, totalBomApm);
+  const latestReportDate = liveMembershipData
+    .map((item) => item.reportDate)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+  const dataThrough = latestReportDate
+    ? new Date(`${latestReportDate}T12:00:00`)
+    : new Date("2026-08-03T12:00:00");
+  dataThrough.setDate(dataThrough.getDate() - 1);
+  const dataThroughLabel = dataThrough.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
   return (
     <main className="overview-page">
@@ -135,7 +149,7 @@ export default function Home() {
           })}
         </section>
 
-        <footer>Official center trial totals: Daily Scorecard · Coaching detail: Trial Tracker <span>August reporting through EOD August 1, 2026</span></footer>
+        <footer>Official center trial totals: Daily Scorecard · Coaching detail: Trial Tracker <span>August reporting through EOD {dataThroughLabel}</span></footer>
       </div>
     </main>
   );

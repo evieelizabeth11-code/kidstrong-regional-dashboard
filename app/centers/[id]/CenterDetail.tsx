@@ -26,7 +26,7 @@ const progressTone = (value: number) =>
   value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
 const CALL_PUSH_GOALS = [3500, 4000];
-const MEMBERSHIP_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
+const MEMBERSHIP_FEED_URL = "/api/dashboard-feed";
 type Section = "overview" | "trials" | "calls" | "membership";
 
 export default function CenterDetail({ centerId, section }: { centerId: string; section: Section }) {
@@ -46,7 +46,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   useEffect(() => {
     const loadMembershipData = async () => {
       try {
-        const response = await fetch(`${MEMBERSHIP_FEED_URL}&t=${Date.now()}`, { cache: "no-store" });
+        const response = await fetch(`${MEMBERSHIP_FEED_URL}?t=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) return;
         const rows = (await response.text()).trim().split(/\r?\n/).slice(1);
         setLiveCallData(mergeCallFeedRows(callData, rows));
@@ -217,6 +217,11 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
       })
     : "Aug 2, 2026";
   const dataThroughLabel = dataThrough.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const footerDataThroughLabel = dataThrough.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
   const classRows = useMemo(() => {
     const rows = selected.classes.filter((row) => dayFilter === "All days" || row.day === dayFilter);
@@ -402,7 +407,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         </section>}
         {section === "membership" && !membership && <section className="empty-state"><strong>Membership data is coming soon.</strong><span>This center will populate when its membership report is added.</span></section>}
 
-        <footer>Sources: Daily Scorecard, Trial Tracker, Membership Health, and Podium <span>August reporting through EOD August 1, 2026</span></footer>
+        <footer>Sources: Daily Scorecard, Trial Tracker, Membership Health, and Podium <span>August reporting through EOD {footerDataThroughLabel}</span></footer>
       </div>
     </main>
   );

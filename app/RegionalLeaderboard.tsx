@@ -5,7 +5,7 @@ import { membershipData, type CenterMembership } from "./membership-data";
 import { reports } from "./trial-data";
 import { mergeOfficialTrialFeed } from "./trial-feed";
 
-const MEMBERSHIP_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
+const MEMBERSHIP_FEED_URL = "/api/dashboard-feed";
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
 
 export default function RegionalLeaderboard() {
@@ -15,7 +15,7 @@ export default function RegionalLeaderboard() {
   useEffect(() => {
     const loadMemberships = async () => {
       try {
-        const response = await fetch(`${MEMBERSHIP_FEED_URL}&t=${Date.now()}`, { cache: "no-store" });
+        const response = await fetch(`${MEMBERSHIP_FEED_URL}?t=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) return;
         const rows = (await response.text()).trim().split(/\r?\n/).slice(1);
         setLiveReports(mergeOfficialTrialFeed(reports, rows));
