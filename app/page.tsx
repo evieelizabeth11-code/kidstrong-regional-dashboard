@@ -77,8 +77,7 @@ export default function Home() {
     .at(-1);
   const dataThrough = latestReportDate
     ? new Date(`${latestReportDate}T12:00:00`)
-    : new Date("2026-08-03T12:00:00");
-  dataThrough.setDate(dataThrough.getDate() - 1);
+    : new Date("2026-08-02T12:00:00");
   const dataThroughLabel = dataThrough.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",

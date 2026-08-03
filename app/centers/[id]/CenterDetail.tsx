@@ -179,7 +179,6 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const attritionPct = membership ? pct(membership.drops.total, membership.bomApm) : 0;
   const reportDate = membership?.reportDate ? new Date(`${membership.reportDate}T12:00:00`) : new Date("2026-08-02T12:00:00");
   const dataThrough = new Date(reportDate);
-  dataThrough.setDate(dataThrough.getDate() - 1);
   const daysInMonth = new Date(dataThrough.getFullYear(), dataThrough.getMonth() + 1, 0).getDate();
   const elapsedDays = Math.max(1, dataThrough.getDate());
   const daysRemaining = Math.max(1, daysInMonth - elapsedDays);
