@@ -67,7 +67,7 @@ export default function ScorecardUploader() {
       const response = await fetch("/api/scorecard", { method: "POST", body: form });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.error || "The PDF could not be read.");
-      setPreview(result); setMessage("Four centers found. Review every row before approving.");
+      setPreview(result); setMessage("Four centers found and every total passed validation. Review, then approve.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "The PDF could not be read.");
     } finally { setBusy(false); }
@@ -111,9 +111,9 @@ export default function ScorecardUploader() {
       </div>
       <label className={`file-drop ${file ? "selected" : ""}`}>
         <input type="file" accept="application/pdf,.pdf" onChange={(event) => setFile(event.target.files?.[0] ?? null)} required />
-        <b>{file ? "✓" : "+"}</b><strong>{file?.name ?? "Choose the scorecard PDF"}</strong><span>{file ? `${(file.size / 1024).toFixed(0)} KB ready for review` : "Click to browse your computer"}</span>
+        <b>{file ? "✓" : "+"}</b><strong>{file?.name ?? "Choose the scorecard PDF"}</strong><span>{file ? `${(file.size / 1024).toFixed(0)} KB ready for validation` : "Click to browse your computer"}</span>
       </label>
-      <button className="primary-admin-button" disabled={busy || ready === false}>{busy ? "Reading scorecard…" : "Extract four centers →"}</button>
+      <button className="primary-admin-button" disabled={busy || ready === false}>{busy ? "Reading & validating…" : "Read & validate four centers →"}</button>
     </form>}
 
     {preview && <div className="review-card">

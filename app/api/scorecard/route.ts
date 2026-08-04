@@ -1,5 +1,8 @@
 export const runtime = "nodejs";
 
+import { PDFParse } from "pdf-parse";
+import { parseScorecardText } from "../../scorecard-parser";
+
 const MAX_PDF_BYTES = 5 * 1024 * 1024;
 
 function safeEqual(left: string, right: string) {
@@ -7,15 +10,6 @@ function safeEqual(left: string, right: string) {
   let mismatch = 0;
   for (let index = 0; index < left.length; index += 1) mismatch |= left.charCodeAt(index) ^ right.charCodeAt(index);
   return mismatch === 0;
-}
-
-function toBase64(bytes: Uint8Array) {
-  let binary = "";
-  const chunkSize = 0x8000;
-  for (let index = 0; index < bytes.length; index += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(index, Math.min(index + chunkSize, bytes.length)));
-  }
-  return btoa(binary);
 }
 
 function configuration() {
@@ -55,11 +49,14 @@ export async function POST(request: Request) {
     if (file.size > MAX_PDF_BYTES) {
       return Response.json({ ok: false, error: "The PDF must be smaller than 5 MB." }, { status: 400 });
     }
-    payload = {
-      ...payload,
-      fileName: file.name,
-      pdfBase64: toBase64(new Uint8Array(await file.arrayBuffer())),
-    };
+    const parser = new PDFParse({ data: new Uint8Array(await file.arrayBuffer()) });
+    try {
+      const extracted = await parser.getText({ first: 1 });
+      const rows = parseScorecardText(extracted.text);
+      return Response.json({ ok: true, reportDate, fileName: file.name, sourceFileId: "dashboard-local-parse", sourceFileUrl: "", rows });
+    } catch (error) {
+      return Response.json({ ok: false, error: error instanceof Error ? error.message : "The PDF could not be validated." }, { status: 422 });
+    } finally { await parser.destroy(); }
   } else if (action === "approve") {
     try {
       payload = {
