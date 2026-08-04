@@ -77,7 +77,8 @@ export default function Home() {
     .at(-1);
   const dataThrough = latestReportDate
     ? new Date(`${latestReportDate}T12:00:00`)
-    : new Date("2026-08-02T12:00:00");
+    : new Date("2026-08-04T12:00:00");
+  dataThrough.setDate(dataThrough.getDate() - 1);
   const dataThroughLabel = dataThrough.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -111,7 +112,7 @@ export default function Home() {
           <article><small>CALL TIME</small><div className="regional-value-pair"><strong>{totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><em>{pct(totalMinutes, 12000).toFixed(1)}%</em></div><span>of 12,000 regional minutes</span></article>
         </section>
 
-        <RegionalLeaderboard />
+        <RegionalLeaderboard memberships={liveMembershipData} reports={liveReports} />
 
         <section className="overview-section-head">
           <div><p className="kicker">CENTER SCORECARDS</p><h2>Select a center to explore</h2></div>
