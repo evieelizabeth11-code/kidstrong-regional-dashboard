@@ -5,7 +5,10 @@ const nextConfig: NextConfig = {
   // of the webpack bundle so Vercel can load the correct Linux package.
   serverExternalPackages: ["pdf-parse", "@napi-rs/canvas"],
   outputFileTracingIncludes: {
-    "/api/scorecard": ["./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"],
+    "/api/scorecard": [
+      "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
+      "./node_modules/.pnpm/pdfjs-dist@5.4.296/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
+    ],
   },
   // vinext's worker bundle does not receive Vercel's runtime process.env.
   // Inline these server-only values at build time; they are referenced only
