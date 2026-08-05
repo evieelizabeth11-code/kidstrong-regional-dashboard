@@ -1,6 +1,5 @@
 export const runtime = "nodejs";
 
-import { PDFParse } from "pdf-parse";
 import { parseScorecardText } from "../../scorecard-parser";
 
 const MAX_PDF_BYTES = 5 * 1024 * 1024;
@@ -49,6 +48,9 @@ export async function POST(request: Request) {
     if (file.size > MAX_PDF_BYTES) {
       return Response.json({ ok: false, error: "The PDF must be smaller than 5 MB." }, { status: 400 });
     }
+    // Load the PDF engine only for an actual upload. Keeping it out of the
+    // module scope lets the readiness check remain lightweight and reliable.
+    const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: new Uint8Array(await file.arrayBuffer()) });
     try {
       const extracted = await parser.getText({ first: 1 });
