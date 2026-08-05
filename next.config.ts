@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Keep the PDF engine and its optional native text-extraction support out
+  // of the webpack bundle so Vercel can load the correct Linux package.
+  serverExternalPackages: ["pdf-parse"],
   // vinext's worker bundle does not receive Vercel's runtime process.env.
   // Inline these server-only values at build time; they are referenced only
   // by the private scorecard API route and never by a client component.
