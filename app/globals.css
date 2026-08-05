@@ -769,3 +769,29 @@ footer { font-size:11px; }
   .history-header-actions { justify-content:center; }
   .history-totals,.history-center-grid { grid-template-columns:1fr; }
 }
+
+
+/* Daily dashboard reconciliation */
+.reconcile-card { padding:26px;border:1px solid rgba(109,231,255,.34);border-radius:16px;background:linear-gradient(145deg,#09265d,#041535);box-shadow:var(--surface-shadow); }
+.reconcile-heading { display:flex;align-items:flex-start;justify-content:space-between;gap:20px; }
+.reconcile-heading small { color:#6de7ff;font-weight:900;letter-spacing:.08em; }
+.reconcile-heading h2 { margin:6px 0 7px;font-size:25px; }
+.reconcile-heading p { max-width:680px;margin:0;color:#aebddd;font-size:12px;line-height:1.55; }
+.reconcile-heading>span { padding:7px 10px;border-radius:99px;background:rgba(83,216,122,.1);color:var(--green);font-size:9px;font-weight:950;white-space:nowrap; }
+.reconcile-checks { display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:20px; }
+.reconcile-checks div { display:flex;align-items:center;gap:9px;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:#041535;color:#91a4ca;font-size:11px;font-weight:850; }
+.reconcile-checks b { width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#0d347d;color:#b9c9e7; }
+.reconcile-checks div.passed { border-color:rgba(83,216,122,.38);color:white; }
+.reconcile-checks div.passed b { background:var(--green);color:#03142f; }
+.reconcile-button { background:linear-gradient(90deg,var(--green),#6de7ff); }
+.reconcile-card>.admin-message { margin-top:12px; }
+.reconcile-confirmation { display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;margin-top:12px;padding:14px 16px;border:1px solid rgba(83,216,122,.32);border-radius:10px;background:rgba(83,216,122,.08); }
+.reconcile-confirmation strong { color:var(--green);font-size:12px; }
+.reconcile-confirmation span { color:#afbdd9;font-size:10px; }
+.reconcile-confirmation a { color:#6de7ff;font-size:11px;font-weight:900; }
+
+@media(max-width:760px){
+  .reconcile-heading { flex-direction:column; }
+  .reconcile-checks { grid-template-columns:1fr 1fr; }
+  .reconcile-confirmation { grid-template-columns:1fr; }
+}
