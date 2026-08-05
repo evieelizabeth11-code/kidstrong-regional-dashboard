@@ -50,6 +50,14 @@ export async function POST(request: Request) {
     }
     // Load the PDF engine only for an actual upload. Keeping it out of the
     // module scope lets the readiness check remain lightweight and reliable.
+    // pdf.js expects browser geometry globals. Vercel's Node runtime does not
+    // provide them, so install the native canvas equivalents before loading it.
+    const canvas = await import("@napi-rs/canvas");
+    Object.assign(globalThis, {
+      DOMMatrix: canvas.DOMMatrix,
+      ImageData: canvas.ImageData,
+      Path2D: canvas.Path2D,
+    });
     const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: new Uint8Array(await file.arrayBuffer()) });
     try {
