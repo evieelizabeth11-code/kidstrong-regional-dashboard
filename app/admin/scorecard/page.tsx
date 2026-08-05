@@ -17,7 +17,7 @@ export default function ScorecardUploadPage() {
       <section className="admin-hero">
         <p className="kicker">DAILY SCORECARD</p>
         <h1>Upload. Review. <span>Approve.</span></h1>
-        <p>The PDF is archived privately, then the four Southern New Jersey centers are extracted for your review before any dashboard number changes.</p>
+        <p>The four Southern New Jersey centers are read securely from the PDF and validated for your review before any dashboard number changes.</p>
       </section>
       <ScorecardUploader />
     </div>
