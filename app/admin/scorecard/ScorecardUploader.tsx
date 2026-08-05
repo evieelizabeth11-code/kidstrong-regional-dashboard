@@ -32,6 +32,13 @@ type Preview = {
   rows: ScorecardRow[];
 };
 
+type Reconciliation = {
+  reportDate: string;
+  checkedAt: string;
+  centersChecked: number;
+  checks: { health: boolean; calls: boolean; trials: boolean; scorecard: boolean };
+};
+
 const today = () => {
   const date = new Date();
   const offset = date.getTimezoneOffset();
@@ -47,6 +54,9 @@ export default function ScorecardUploader() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [complete, setComplete] = useState(false);
+  const [reconciling, setReconciling] = useState(false);
+  const [reconciliation, setReconciliation] = useState<Reconciliation | null>(null);
+  const [reconcileMessage, setReconcileMessage] = useState("");
 
   useEffect(() => {
     fetch("/api/scorecard", { cache: "no-store" })
@@ -95,6 +105,22 @@ export default function ScorecardUploader() {
     setPreview({ ...preview, rows });
   };
 
+  const reconcile = async () => {
+    if (!password) return setReconcileMessage("Enter the admin password above first.");
+    setReconciling(true); setReconcileMessage(""); setReconciliation(null);
+    const form = new FormData();
+    form.set("password", password);
+    try {
+      const response = await fetch("/api/reconcile", { method: "POST", body: form, cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.error || "The dashboard could not be reconciled.");
+      setReconciliation(result);
+      setReconcileMessage("Dashboard reconciled successfully. The live site is reading the latest sheet data.");
+    } catch (error) {
+      setReconcileMessage(error instanceof Error ? error.message : "The dashboard could not be reconciled.");
+    } finally { setReconciling(false); }
+  };
+
   return <section className="scorecard-workflow">
     {ready === false && <div className="setup-banner"><strong>ONE-TIME CONNECTION NEEDED</strong><span>The upload page is built, but its private Google connection still needs to be activated.</span></div>}
     <div className="workflow-steps" aria-label="Upload steps">
@@ -136,5 +162,22 @@ export default function ScorecardUploader() {
       <button className="primary-admin-button approve" disabled={busy || complete} onClick={approve}>{complete ? "Dashboard updated ✓" : busy ? "Updating dashboard…" : "Approve & update dashboard →"}</button>
     </div>}
     {message && <p className={`admin-message ${complete ? "success" : ""}`} role="status">{message}</p>}
+
+    <div className="reconcile-card">
+      <div className="reconcile-heading">
+        <div><small>FINAL MORNING STEP</small><h2>Reconcile &amp; refresh dashboard</h2><p>After Health, Calls, and the Daily Scorecard are complete, run one final check against the live Google Sheet feed.</p></div>
+        <span>{reconciliation ? "READY ✓" : "4 DATA CHECKS"}</span>
+      </div>
+      <div className="reconcile-checks" aria-label="Reconciliation checks">
+        {(["health", "calls", "trials", "scorecard"] as const).map((check) => <div className={reconciliation?.checks[check] ? "passed" : ""} key={check}>
+          <b>{reconciliation?.checks[check] ? "✓" : "•"}</b><span>{check === "scorecard" ? "Daily Scorecard" : check[0].toUpperCase() + check.slice(1)}</span>
+        </div>)}
+      </div>
+      <button className="primary-admin-button reconcile-button" disabled={reconciling || ready === false} onClick={reconcile}>
+        {reconciling ? "Reconciling four centers…" : reconciliation ? "Reconcile again ↻" : "Reconcile & refresh dashboard ↻"}
+      </button>
+      {reconcileMessage && <p className={`admin-message ${reconciliation ? "success" : ""}`} role="status">{reconcileMessage}</p>}
+      {reconciliation && <div className="reconcile-confirmation"><strong>{reconciliation.centersChecked} centers confirmed</strong><span>Report date {reconciliation.reportDate} · Checked {new Date(reconciliation.checkedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span><a href={`/?refresh=${Date.now()}`}>Open refreshed dashboard →</a></div>}
+    </div>
   </section>;
 }
