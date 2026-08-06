@@ -228,6 +228,9 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
           const selectedCloseRate = scenarioRates[center.center] ?? center.closeRate;
           const scenarioForecast = nextMilestone ? forecastMilestone(center, nextMilestone, selectedCloseRate) : null;
           const scenarioSigns = center.projectedMonthlyTrials * center.showRate * selectedCloseRate;
+          const breakEvenCloseRate = center.projectedMonthlyTrials && center.showRate
+            ? center.projectedMonthlyAttrition / (center.projectedMonthlyTrials * center.showRate)
+            : 0;
           const monthsSaved = nextForecast && scenarioForecast
             ? Math.max(0, (nextForecast.payoutDate.getFullYear() - scenarioForecast.payoutDate.getFullYear()) * 12 + nextForecast.payoutDate.getMonth() - scenarioForecast.payoutDate.getMonth())
             : 0;
@@ -252,7 +255,7 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
             {nextMilestone && <section className={`forecast-next-target ${nextForecast === null ? "off-pace" : ""}`}>
               <div><span>★</span><div><small>NEXT MEMBERSHIP MILESTONE</small><strong>{nextMilestone} APM</strong></div></div>
               <div><strong>{membersNeeded}</strong><span>members needed today</span></div>
-              <div><strong>{nextForecast ? payoutLabel(nextForecast.payoutDate) : "Not reached at current rates"}</strong><span>{nextForecast ? `Projected ${Math.round(nextForecast.projectedApm)} APM at payout` : "Increase trial volume, show rate, or close rate—or reduce attrition"}</span></div>
+              <div><small>ESTIMATED ACHIEVEMENT DATE</small><strong>{nextForecast ? payoutLabel(nextForecast.payoutDate) : "No estimate yet"}</strong><span>{nextForecast ? `Projected ${Math.round(nextForecast.projectedApm)} APM at that time` : `Current growth must improve before a reliable date can be calculated`}</span></div>
             </section>}
 
             <div className="forecast-pace-equation">
@@ -262,14 +265,14 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
             </div>
 
             {nextMilestone && <section className="forecast-scenario-tool">
-              <div className="forecast-scenario-head"><div><small>WHAT IF WE CLOSE MORE?</small><strong>See how conversion changes the road to {nextMilestone}.</strong></div><span>Show rate and trial volume stay fixed</span></div>
+              <div className="forecast-scenario-head"><div><small>WHAT IF WE CLOSE MORE?</small><strong>See how conversion changes the road to {nextMilestone}.</strong></div><span>Selected scenario: {(selectedCloseRate * 100).toFixed(0)}% close</span></div>
               <div className="forecast-scenario-buttons" role="group" aria-label={`${center.center} close rate scenario`}>
                 {[center.closeRate, .5, .6, .7].map((rate, index) => <button className={Math.abs(selectedCloseRate - rate) < .001 ? "active" : ""} key={`${center.center}-${index}`} onClick={() => setScenarioRates((current) => ({ ...current, [center.center]: rate }))}>{index === 0 ? `CURRENT ${(rate * 100).toFixed(0)}%` : `${(rate * 100).toFixed(0)}% CLOSE`}</button>)}
               </div>
-              <div className="forecast-scenario-result">
+              <div className="forecast-scenario-result" aria-live="polite">
                 <div><small>MONTHLY TRIAL SIGNS</small><strong>{scenarioSigns.toFixed(1)}</strong><span>{(scenarioSigns - center.projectedMonthlyTrialSigns) >= .05 ? `+${(scenarioSigns - center.projectedMonthlyTrialSigns).toFixed(1)} vs. today` : "at today's rate"}</span></div>
-                <div><small>PROJECTED PAYOUT DATE</small><strong>{scenarioForecast ? payoutLabel(scenarioForecast.payoutDate) : "Not reached"}</strong><span>{scenarioForecast ? `${Math.round(scenarioForecast.projectedApm)} projected APM` : "growth does not outpace attrition"}</span></div>
-                <div className={monthsSaved || createsPath ? "accelerated" : ""}><small>TIME SAVED</small><strong>{createsPath ? "New path" : monthsSaved ? `${monthsSaved} month${monthsSaved === 1 ? "" : "s"}` : "—"}</strong><span>{createsPath ? "milestone becomes reachable" : monthsSaved ? "faster than today's rate" : "baseline timeline"}</span></div>
+                <div className={scenarioForecast ? "scenario-date-ready" : ""}><small>ESTIMATED ACHIEVED BY</small><strong>{scenarioForecast ? payoutLabel(scenarioForecast.payoutDate) : "No estimate yet"}</strong><span>{scenarioForecast ? `${Math.round(scenarioForecast.projectedApm)} projected APM` : `${Math.ceil(breakEvenCloseRate * 100)}% close needed to begin net growth at this volume`}</span></div>
+                <div className={monthsSaved || createsPath ? "accelerated" : ""}><small>TIME SAVED</small><strong>{createsPath ? "New achievable path" : monthsSaved ? `${monthsSaved} month${monthsSaved === 1 ? "" : "s"}` : nextForecast && scenarioForecast ? "0 months" : "Not calculable yet"}</strong><span>{createsPath ? "current rate has no achievement date" : monthsSaved ? "faster than today's rate" : nextForecast && scenarioForecast ? "already at the earliest first-of-month date" : "close rate alone does not yet overcome attrition"}</span></div>
               </div>
             </section>}
 
@@ -282,7 +285,7 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
                   <span>{achieved ? "✓" : target === 500 ? "◆" : "★"}</span>
                   <strong>{target}</strong>
                   <small>MEMBERSHIP MILESTONE</small>
-                  <p>{achieved ? "ACHIEVED" : projection ? payoutLabel(projection.payoutDate) : "Not reached at current rates"}</p>
+                  <p>{achieved ? "ACHIEVED" : projection ? `Estimated ${payoutLabel(projection.payoutDate)}` : "No estimate yet"}</p>
                 </div>;
               })}
             </div>

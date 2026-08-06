@@ -931,6 +931,8 @@ footer { font-size:11px; }
 .forecast-scenario-result strong { display:block;margin:4px 0;font-size:14px; }
 .forecast-scenario-result .accelerated { border:1px solid rgba(83,216,122,.34);background:rgba(83,216,122,.11); }
 .forecast-scenario-result .accelerated strong { color:var(--green); }
+.forecast-scenario-result .scenario-date-ready { border:1px solid rgba(109,231,255,.34);background:rgba(109,231,255,.09); }
+.forecast-scenario-result .scenario-date-ready strong { color:#6de7ff; }
 .forecast-ladder { display:flex;gap:8px;padding:15px 14px 18px;border-top:1px solid rgba(255,255,255,.1);overflow-x:auto; }
 .forecast-ladder>div { position:relative;min-width:130px;padding:13px;border:1px solid rgba(255,255,255,.11);border-radius:10px;background:rgba(2,11,32,.48); }
 .forecast-ladder>div>span { position:absolute;right:10px;top:9px;color:#ffd166;font-size:15px; }
