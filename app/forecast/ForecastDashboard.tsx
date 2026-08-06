@@ -15,7 +15,7 @@ type ForecastCenter = CenterMembership & {
   elapsedDays: number;
   daysInMonth: number;
   signupPace: number;
-  dropPace: number;
+  monthlyDropLoad: number;
   netMonthlyPace: number;
   milestones: number[];
 };
@@ -47,15 +47,15 @@ function enrichMembership(item: CenterMembership): ForecastCenter {
   const elapsedDays = Math.max(1, dataThrough.getDate());
   const daysInMonth = new Date(dataThrough.getFullYear(), dataThrough.getMonth() + 1, 0).getDate();
   const signupPace = (item.signups.current / elapsedDays) * daysInMonth;
-  const dropPace = (item.drops.total / elapsedDays) * daysInMonth;
+  const monthlyDropLoad = item.drops.total;
   return {
     ...item,
     dataThrough,
     elapsedDays,
     daysInMonth,
     signupPace,
-    dropPace,
-    netMonthlyPace: signupPace - dropPace,
+    monthlyDropLoad,
+    netMonthlyPace: signupPace - monthlyDropLoad,
     milestones: milestoneList(item.center, item.bomApm),
   };
 }
@@ -115,7 +115,7 @@ export default function ForecastDashboard() {
       </section>
 
       <section className="forecast-method">
-        <span>i</span><div><small>HOW THE FORECAST WORKS</small><strong>Projected sign-ups − projected drops = net monthly growth</strong><p>The estimate holds the current August pace steady. It is a directional planning tool, not a guarantee; every new daily update will sharpen the timeline.</p></div>
+        <span>i</span><div><small>HOW THE FORECAST WORKS</small><strong>Projected monthly sign-ups − this month&apos;s total drop load = net monthly growth</strong><p>Total Drops already represents the month&apos;s complete drop load, so it is counted once rather than multiplied by elapsed days. Every new daily update will sharpen the timeline.</p></div>
       </section>
 
       <section className="forecast-center-grid">
@@ -123,6 +123,7 @@ export default function ForecastDashboard() {
           const nextMilestone = center.milestones.find((target) => target > center.bomApm);
           const membersNeeded = nextMilestone ? nextMilestone - center.bomApm : 0;
           const monthsToNext = nextMilestone && center.netMonthlyPace > 0 ? membersNeeded / center.netMonthlyPace : null;
+          const monthlySalesForOneYear = Math.ceil(center.monthlyDropLoad + membersNeeded / 12);
           return <article className="forecast-center-card" key={center.center}>
             <div className="forecast-card-head">
               <div><small>{center.center.toUpperCase()}</small><strong>{center.bomApm} <em>APM</em></strong><span>{center.signups.current} sign-ups · {center.drops.total} drops through {center.dataThrough.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
@@ -132,12 +133,12 @@ export default function ForecastDashboard() {
             {nextMilestone && <section className={`forecast-next-target ${monthsToNext === null ? "off-pace" : ""}`}>
               <div><span>★</span><div><small>NEXT {nextMilestone === 500 ? "MEMBERSHIP" : "BONUS"} MILESTONE</small><strong>{nextMilestone} APM</strong></div></div>
               <div><strong>{membersNeeded}</strong><span>members needed</span></div>
-              <div><strong>{monthsToNext === null ? "Not on pace" : monthsLabel(monthsToNext)}</strong><span>{monthsToNext === null ? "Net growth must turn positive" : `Estimated ${milestoneDate(center.dataThrough, monthsToNext)}`}</span></div>
+              <div><strong>{monthsToNext === null ? "Not on pace" : monthsLabel(monthsToNext)}</strong><span>{monthsToNext === null ? `${monthlySalesForOneYear} sign-ups/month creates a 12-month path` : `Estimated ${milestoneDate(center.dataThrough, monthsToNext)}`}</span></div>
             </section>}
 
             <div className="forecast-pace-equation">
               <div><small>SALES PACE</small><strong>+{center.signupPace.toFixed(1)}</strong><span>projected monthly</span></div><b>−</b>
-              <div><small>DROP PACE</small><strong>{center.dropPace.toFixed(1)}</strong><span>projected monthly</span></div><b>=</b>
+              <div><small>MONTHLY DROP LOAD</small><strong>{center.monthlyDropLoad.toFixed(0)}</strong><span>counted once for the month</span></div><b>=</b>
               <div className={center.netMonthlyPace > 0 ? "positive" : "negative"}><small>NET GROWTH</small><strong>{center.netMonthlyPace >= 0 ? "+" : ""}{center.netMonthlyPace.toFixed(1)}</strong><span>projected monthly</span></div>
             </div>
 
@@ -151,7 +152,7 @@ export default function ForecastDashboard() {
                   <span>{achieved ? "✓" : target === 500 ? "◆" : "★"}</span>
                   <strong>{target}</strong>
                   <small>{target === 500 ? "BIG MILESTONE · NO BONUS" : "BONUS MILESTONE"}</small>
-                  <p>{achieved ? "ACHIEVED" : months === null ? `${needed} needed · pace must improve` : `${needed} needed · ${milestoneDate(center.dataThrough, months)}`}</p>
+                  <p>{achieved ? "ACHIEVED" : months === null ? `${needed} needed · ${Math.ceil(center.monthlyDropLoad + needed / 12)}/month for a 12-month path` : `${needed} needed · ${milestoneDate(center.dataThrough, months)}`}</p>
                 </div>;
               })}
             </div>
