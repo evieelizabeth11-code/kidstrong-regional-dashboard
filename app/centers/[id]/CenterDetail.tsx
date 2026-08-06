@@ -222,6 +222,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
     day: "numeric",
     year: "numeric",
   });
+  const trialInsights = useMemo(() => buildTrialInsights(selected), [selected]);
 
   const classRows = useMemo(() => {
     const rows = selected.classes.filter((row) => dayFilter === "All days" || row.day === dayFilter);
@@ -315,11 +316,10 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             </Link>
           </section>
 
-          <DayPerformance selected={selected} />
           <section className="insights-grid">
-            <article className="insight success"><span>★</span><div><small>WHAT&apos;S WORKING</small><strong>{selected.strongest}</strong></div></article>
-            <article className="insight risk"><span>!</span><div><small>GREATEST OPPORTUNITY</small><strong>{selected.opportunity}</strong></div></article>
-            <article className="insight focus"><span>◎</span><div><small>GOLD STANDARD</small><strong>{selected.goldStandard}</strong></div></article>
+            <article className="insight success"><span>★</span><div><small>WHAT&apos;S WORKING · LIVE</small><strong>{trialInsights.strongest}</strong></div></article>
+            <article className="insight risk"><span>!</span><div><small>GREATEST OPPORTUNITY · LIVE</small><strong>{trialInsights.opportunity}</strong></div></article>
+            <article className="insight focus"><span>◎</span><div><small>GOLD STANDARD · LIVE</small><strong>{trialInsights.goldStandard}</strong></div></article>
           </section>
         </>}
 
@@ -330,6 +330,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             <article><span className="metric-icon navy">C</span><div><small>TRIALS CLOSED</small><strong>{selected.closed}</strong><p>{rate(selected.closed, selected.showed)} close rate</p></div></article>
             <article><span className="metric-icon black">NS</span><div><small>NO SHOWS</small><strong>{selected.scheduled - selected.showed}</strong><p>{rate(selected.scheduled - selected.showed, selected.scheduled)} no-show rate</p></div></article>
           </section>
+          <TrialPerformanceByDay selected={selected} />
           {teamTrials.length > 0 && <section className="panel team-trial-panel">
             <div className="panel-bar team-trial-bar"><div><h3>SHOW &amp; CLOSE RATES BY PERSON</h3><span>Trial Tracker coaching data · may differ from official scorecard totals</span></div><strong>{teamTrials.reduce((sum, item) => sum + item.closed, 0)} tracker closes</strong></div>
             <div className="team-trial-grid">{teamTrials.map((person) => <article className="team-trial-card" key={person.person}><div className="team-trial-name"><strong>{person.person}</strong><span>{person.booked} booked · {person.closed} closed</span></div><div className="team-rate-pair"><div><small>SHOW RATE</small><strong>{person.showRate === null ? "—" : `${person.showRate}%`}</strong><i><b style={{ width: `${person.showRate ?? 0}%` }} /></i></div><div><small>CLOSE RATE</small><strong>{person.closeRate === null ? "—" : `${person.closeRate}%`}</strong><i><b style={{ width: `${person.closeRate ?? 0}%` }} /></i></div></div></article>)}</div>
@@ -431,9 +432,40 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   );
 }
 
-function DayPerformance({ selected }: { selected: (typeof reports)[number] }) {
-  return <section className="analysis-grid overview-day-performance">
+function TrialPerformanceByDay({ selected }: { selected: (typeof reports)[number] }) {
+  return <section className="analysis-grid trial-day-performance">
     <article className="panel day-table-panel"><div className="panel-bar"><h3>TRIAL PERFORMANCE BY DAY</h3><span>{selected.center}</span></div><div className="day-table"><div className="day-table-head"><span>Day</span><span>Sched</span><span>Showed</span><span>Closed</span><span>Show %</span><span>Close %</span></div>{selected.days.map((row) => <div className="day-table-row" key={row.day}><strong>{row.day}</strong><span>{row.scheduled}</span><span>{row.showed}</span><span>{row.closed}</span><span className={tone(pct(row.showed, row.scheduled))}>{rate(row.showed, row.scheduled)}</span><span className={tone(pct(row.closed, row.showed))}>{rate(row.closed, row.showed)}</span></div>)}</div></article>
-    <article className="panel chart-panel"><div className="panel-bar"><h3>RATES BY DAY</h3><span>Show / Close</span></div><div className="legend"><span><i className="show-key" /> Show rate</span><span><i className="close-key" /> Close rate</span></div><div className="grouped-chart">{selected.days.map((row) => <div className="chart-group" key={row.day}><div className="bars"><span className="show-bar" style={{ height: `${pct(row.showed, row.scheduled)}%` }} /><span className="close-bar" style={{ height: `${pct(row.closed, row.showed)}%` }} /></div><small>{row.day.slice(0, 3).toUpperCase()}</small></div>)}</div></article>
   </section>;
+}
+
+function buildTrialInsights(selected: (typeof reports)[number]) {
+  const activeDays = selected.days.filter((day) => day.scheduled > 0);
+  const strongestDay = [...activeDays].sort((a, b) => {
+    const score = (row: typeof a) => pct(row.showed, row.scheduled) + pct(row.closed, row.showed);
+    return score(b) - score(a) || b.closed - a.closed || b.showed - a.showed;
+  })[0];
+  const opportunityDay = [...activeDays].sort((a, b) => {
+    const missed = (row: typeof a) => (row.scheduled - row.showed) + (row.showed - row.closed);
+    return missed(b) - missed(a) || b.scheduled - a.scheduled;
+  })[0];
+  const goldClass = [...selected.classes]
+    .filter((row) => row.showed > 0)
+    .sort((a, b) => {
+      const perfectA = Number(a.showed === a.scheduled && a.closed === a.showed);
+      const perfectB = Number(b.showed === b.scheduled && b.closed === b.showed);
+      const score = (row: typeof a) => pct(row.showed, row.scheduled) + pct(row.closed, row.showed);
+      return perfectB - perfectA || score(b) - score(a) || b.closed - a.closed || b.showed - a.showed;
+    })[0];
+
+  return {
+    strongest: strongestDay
+      ? `${strongestDay.day} leads at ${rate(strongestDay.showed, strongestDay.scheduled)} show and ${rate(strongestDay.closed, strongestDay.showed)} close (${strongestDay.closed} signed).`
+      : "Waiting for completed trial results.",
+    opportunity: opportunityDay
+      ? `${opportunityDay.day} has the largest conversion gap: ${opportunityDay.scheduled} scheduled, ${opportunityDay.showed} attended, and ${opportunityDay.closed} signed.`
+      : "Waiting for completed trial results.",
+    goldStandard: goldClass
+      ? `${goldClass.day} ${goldClass.time} is the current benchmark at ${rate(goldClass.showed, goldClass.scheduled)} show and ${rate(goldClass.closed, goldClass.showed)} close.`
+      : "Waiting for completed class-level results.",
+  };
 }
