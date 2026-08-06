@@ -259,6 +259,24 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         </section>
 
         {section === "overview" && <>
+          <section className="overview-business-kpis" aria-label="Membership and sales overview">
+            <article className="members-kpi">
+              <small>TOTAL MEMBER COUNT</small>
+              <strong>{membership?.totalMembers ?? "—"}</strong>
+              <span>{membership ? `Membership Health · reported ${dataThroughDate}` : "Membership data unavailable"}</span>
+            </article>
+            <article className="sales-kpi">
+              <small>SALES MTD</small>
+              <strong>{membership?.signups.current ?? "—"}</strong>
+              <span>{membership ? `${membership.signups.current} of ${membership.signups.goal} monthly goal` : "Sales data unavailable"}</span>
+            </article>
+            <article className={`sales-pace-kpi ${goalAchieved ? "goal" : membership && membership.signups.current >= expectedSignups - 1 ? "on-pace" : "behind"}`}>
+              <small>PACE TO MONTHLY SALES GOAL</small>
+              <strong>{membership ? paceLabel : "—"}</strong>
+              <span>{membership ? `${membership.signups.current} actual vs. ${expectedSignups.toFixed(1)} expected through ${dataThroughLabel}` : "Pace will calculate when membership data is available"}</span>
+            </article>
+          </section>
+
           <section className="overview-primary-kpis">
             <article><small>CENTER SHOW RATE · OFFICIAL SCORECARD</small><strong>{rate(selected.showed, selected.scheduled)}</strong><span>{selected.showed} of {selected.scheduled} trials attended</span></article>
             <article><small>CENTER CLOSE RATE · OFFICIAL SCORECARD</small><strong>{rate(selected.closed, selected.showed)}</strong><span>{selected.closed} of {selected.showed} attended trials signed</span></article>
