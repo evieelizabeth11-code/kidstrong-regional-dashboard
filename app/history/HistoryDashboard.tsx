@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { teamTrialData, type TeamTrialPerformance } from "../team-trial-data";
 
 type HistoryRow = {
   snapshotDate: string;
@@ -22,6 +23,7 @@ type HistoryRow = {
 };
 
 const HISTORY_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000008&single=true&output=csv";
+const DASHBOARD_FEED_URL = "/api/dashboard-feed";
 const HISTORY_FALLBACK: HistoryRow[] = [
   { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Brick", totalMembers: 608, bomApm: 537, activePaying: 536, drops: 27, signups: 31, signupGoal: 60, scheduled: 161, attended: 98, closed: 33, callMinutes: 3362.73 },
   { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Mount Laurel", totalMembers: 480, bomApm: 402, activePaying: 402, drops: 27, signups: 46, signupGoal: 36, scheduled: 130, attended: 82, closed: 41, callMinutes: 3157.34 },
@@ -44,6 +46,7 @@ export default function HistoryDashboard() {
   const [rows, setRows] = useState<HistoryRow[]>(HISTORY_FALLBACK);
   const [selectedPeriod, setSelectedPeriod] = useState("2026-07");
   const [expandedCenter, setExpandedCenter] = useState<string | null>(null);
+  const [currentTeamTrials, setCurrentTeamTrials] = useState<TeamTrialPerformance[]>([]);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -77,6 +80,36 @@ export default function HistoryDashboard() {
       }
     };
     loadHistory();
+  }, []);
+
+  useEffect(() => {
+    const loadCurrentTeamTrials = async () => {
+      try {
+        const response = await fetch(`${DASHBOARD_FEED_URL}?t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const current: TeamTrialPerformance[] = [];
+        (await response.text()).trim().split(/\r?\n/).slice(1).forEach((row) => {
+          const values = row.split(",").map((value) => value.replace(/^"|"$/g, "").trim());
+          (values[37] ?? "").split(";").forEach((entry) => {
+            const [person, booked, showed, closed] = entry.split("|");
+            if (values[0] && person && Number(booked) > 0) {
+              current.push({
+                center: values[0],
+                person,
+                booked: Number(booked),
+                closed: Number(closed) || 0,
+                showRate: Number(booked) ? Math.round((Number(showed) / Number(booked)) * 100) : null,
+                closeRate: Number(showed) ? Math.round((Number(closed) / Number(showed)) * 100) : null,
+              });
+            }
+          });
+        });
+        setCurrentTeamTrials(current);
+      } catch {
+        // Keep finalized July team results available if the live feed is temporarily unavailable.
+      }
+    };
+    loadCurrentTeamTrials();
   }, []);
 
   const periods = useMemo(() => [...new Set(rows.map((row) => row.period))].sort().reverse(), [rows]);
@@ -136,6 +169,8 @@ export default function HistoryDashboard() {
           const isExpanded = expandedCenter === row.center;
           const showRate = pct(row.attended, row.scheduled);
           const closeRate = pct(row.closed, row.attended);
+          const personRates = (selectedPeriod === "2026-07" ? teamTrialData : currentTeamTrials)
+            .filter((person) => person.center === row.center);
           return <article className={`history-center-card ${isExpanded ? "expanded" : ""}`} key={row.center}>
             <button type="button" onClick={() => setExpandedCenter(isExpanded ? null : row.center)} aria-expanded={isExpanded}>
               <div className="history-card-heading"><div><small>{row.status}</small><h3>{row.center}</h3></div><span>{isExpanded ? "Close ×" : "View details +"}</span></div>
@@ -152,6 +187,7 @@ export default function HistoryDashboard() {
               <section><small>TRIAL PERFORMANCE</small><div><span>Scheduled <b>{row.scheduled}</b></span><span>Attended <b>{row.attended}</b></span><span>Signed <b>{row.closed}</b></span><span>No shows <b>{Math.max(0, row.scheduled - row.attended)}</b></span></div></section>
               <section><small>MEMBERSHIP &amp; SALES</small><div><span>BOM APM <b>{row.bomApm}</b></span><span>Active paying <b>{row.activePaying}</b></span><span>Total members <b>{row.totalMembers}</b></span><span>Drops <b>{row.drops}</b></span></div></section>
               <section><small>GOAL RESULTS</small><div><span>Sales goal <b>{row.signupGoal}</b></span><span>Sales result <b>{row.signups}</b></span><span>Call goal <b>{CALL_MINUTE_GOAL.toLocaleString()}</b></span><span>Call result <b>{row.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</b></span></div></section>
+              <section className="history-person-rates"><small>SHOW &amp; CLOSE RATES BY PERSON</small>{personRates.length ? <div>{personRates.map((person) => <article key={person.person}><strong>{person.person}</strong><span><small>SHOW</small><b className={(person.showRate ?? 0) >= RATE_GOAL ? "goal-hit" : ""}>{person.showRate === null ? "—" : `${person.showRate}%`}</b></span><span><small>CLOSE</small><b className={(person.closeRate ?? 0) >= RATE_GOAL ? "goal-hit" : ""}>{person.closeRate === null ? "—" : `${person.closeRate}%`}</b></span><em>{person.booked} booked · {person.closed} signed</em></article>)}</div> : <p>Person-level trial results are awaiting the tracker feed.</p>}</section>
             </div>}
           </article>;
         })}

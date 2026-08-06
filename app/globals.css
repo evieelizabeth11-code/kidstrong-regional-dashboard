@@ -785,6 +785,16 @@ footer { font-size:11px; }
 .history-center-breakdown section>div { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
 .history-center-breakdown span { display:flex;justify-content:space-between;gap:8px;padding:10px;border-radius:8px;background:rgba(2,11,32,.58);color:#9fb0d2;font-size:10px; }
 .history-center-breakdown b { color:white;font-size:12px; }
+.history-person-rates { grid-column:1/-1; }
+.history-person-rates>div { display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:10px!important; }
+.history-person-rates article { display:grid;grid-template-columns:1fr auto auto;gap:8px 12px;align-items:center;padding:13px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(2,11,32,.58); }
+.history-person-rates article>strong { grid-column:1/-1;color:white;font-size:13px; }
+.history-person-rates article>span { display:block;padding:0;background:transparent; }
+.history-person-rates article>span small { display:block;color:#91a4ca;font-size:8px!important;font-weight:900; }
+.history-person-rates article>span b { display:block;margin-top:3px;font-size:18px; }
+.history-person-rates article>span b.goal-hit { color:var(--green);text-shadow:0 0 13px rgba(83,216,122,.55); }
+.history-person-rates article>em { align-self:end;color:#91a4ca;font-size:9px;font-style:normal;text-align:right; }
+.history-person-rates>p { margin:0;color:#91a4ca;font-size:11px; }
 .history-coming { margin-top:16px;padding:22px;border:1px dashed rgba(109,231,255,.36);border-radius:14px;background:rgba(8,36,93,.55); }
 .history-coming>div { display:flex;align-items:flex-start;gap:15px; }
 .history-coming>div>span { width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#03142f;font-size:20px;font-weight:900; }
@@ -808,6 +818,7 @@ footer { font-size:11px; }
   .history-status { align-items:flex-start;flex-direction:column; }
   .history-status p { text-align:left; }
   .history-center-breakdown { grid-template-columns:1fr; }
+  .history-person-rates>div { grid-template-columns:1fr 1fr!important; }
 }
 @media(max-width:620px){
   .reporting-period-area { justify-items:center; }
@@ -815,6 +826,7 @@ footer { font-size:11px; }
   .header-center-links { justify-content:center; }
   .history-header-actions { justify-content:center; }
   .history-totals,.history-center-grid { grid-template-columns:1fr; }
+  .history-person-rates>div { grid-template-columns:1fr!important; }
 }
 
 
