@@ -151,7 +151,7 @@ export default function HistoryDashboard() {
 
       <section className="history-status">
         <div><small>{status === "FINAL" ? "FINALIZED MONTH" : "MONTH IN PROGRESS"}</small><strong>{periodLabel(selectedPeriod)}</strong><span>Data through {dataThrough}</span></div>
-        <p>{status === "FINAL" ? "This month is frozen and preserved." : "July remains editable until the final reconciliation is approved."}</p>
+        <p>{status === "FINAL" ? "This month is frozen and preserved." : "August remains editable as the active reporting month. July is frozen and preserved."}</p>
       </section>
 
       <section className="history-totals">
