@@ -759,18 +759,32 @@ footer { font-size:11px; }
 .history-status p { margin:0;max-width:430px;line-height:1.5;text-align:right; }
 .history-totals { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
 .history-totals article,.history-center-grid>article { padding:20px;border:1px solid rgba(255,255,255,.13);border-radius:14px;background:linear-gradient(145deg,#0b2863,#06183f);box-shadow:var(--surface-shadow); }
+.history-totals article.goal-hit,.history-center-card dl>div.goal-hit { border-color:rgba(83,216,122,.78);background:linear-gradient(145deg,rgba(83,216,122,.23),#09265d);box-shadow:0 0 25px rgba(83,216,122,.28),inset 0 0 18px rgba(83,216,122,.08); }
+.history-totals article.goal-hit strong,.history-center-card dl>div.goal-hit dd { color:var(--green);text-shadow:0 0 15px rgba(83,216,122,.42); }
 .history-totals small { color:var(--green);font-size:9px!important;font-weight:900;letter-spacing:.06em; }
 .history-totals strong { display:block;font-size:31px;margin:8px 0 4px; }
 .history-totals span { color:#9fb0d2;font-size:10px; }
 .history-center-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:12px; }
-.history-center-grid>article>div:first-child { display:flex;align-items:center;justify-content:space-between;gap:10px; }
+.history-center-card { padding:0!important;overflow:hidden;align-self:start;transition:border-color .2s ease,box-shadow .2s ease; }
+.history-center-card.expanded { grid-column:1/-1;border-color:rgba(109,231,255,.54);box-shadow:0 0 28px rgba(109,231,255,.14); }
+.history-center-card>button { width:100%;padding:20px;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer; }
+.history-center-card>button:focus-visible { outline:3px solid #6de7ff;outline-offset:-4px; }
+.history-card-heading { display:flex;align-items:center;justify-content:space-between;gap:10px; }
+.history-card-heading>div { display:flex;align-items:center;justify-content:space-between;gap:10px;flex:1; }
+.history-card-heading>span { color:#6de7ff;font-size:10px;font-weight:900;white-space:nowrap; }
 .history-center-grid h3 { margin:0;font-size:20px;order:-1; }
-.history-center-grid>article>div:first-child small { color:#ffd166;font-weight:900; }
+.history-card-heading small { color:#ffd166;font-weight:900; }
 .history-center-grid dl { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0 0; }
-.history-center-grid dl>div { padding:12px;border-radius:9px;background:rgba(2,11,32,.5); }
+.history-center-grid dl>div { padding:12px;border:1px solid transparent;border-radius:9px;background:rgba(2,11,32,.5); }
 .history-center-grid dt { color:#91a4ca;font-size:8px;font-weight:900;letter-spacing:.05em; }
 .history-center-grid dd { margin:5px 0 0;font-size:20px;font-weight:900; }
 .history-center-grid dd small { color:#91a4ca;font-size:10px!important; }
+.history-center-breakdown { display:grid;grid-template-columns:repeat(3,1fr);gap:1px;border-top:1px solid rgba(109,231,255,.28);background:rgba(255,255,255,.1); }
+.history-center-breakdown section { padding:20px;background:#06183f; }
+.history-center-breakdown section>small { display:block;margin-bottom:12px;color:var(--green);font-weight:900;letter-spacing:.08em; }
+.history-center-breakdown section>div { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+.history-center-breakdown span { display:flex;justify-content:space-between;gap:8px;padding:10px;border-radius:8px;background:rgba(2,11,32,.58);color:#9fb0d2;font-size:10px; }
+.history-center-breakdown b { color:white;font-size:12px; }
 .history-coming { margin-top:16px;padding:22px;border:1px dashed rgba(109,231,255,.36);border-radius:14px;background:rgba(8,36,93,.55); }
 .history-coming>div { display:flex;align-items:flex-start;gap:15px; }
 .history-coming>div>span { width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#03142f;font-size:20px;font-weight:900; }
@@ -793,6 +807,7 @@ footer { font-size:11px; }
   .history-totals { grid-template-columns:1fr 1fr; }
   .history-status { align-items:flex-start;flex-direction:column; }
   .history-status p { text-align:left; }
+  .history-center-breakdown { grid-template-columns:1fr; }
 }
 @media(max-width:620px){
   .reporting-period-area { justify-items:center; }

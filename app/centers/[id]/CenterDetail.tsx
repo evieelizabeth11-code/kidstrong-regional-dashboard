@@ -261,8 +261,8 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         {section === "overview" && <>
           <section className="overview-business-kpis" aria-label="Membership and sales overview">
             <article className="members-kpi">
-              <small>TOTAL MEMBER COUNT</small>
-              <strong>{membership?.totalMembers ?? "—"}</strong>
+              <small>ACTIVE PAYING MEMBERS · APM</small>
+              <strong>{membership?.bomApm ?? "—"}</strong>
               <span>{membership ? `Membership Health · reported ${dataThroughDate}` : "Membership data unavailable"}</span>
             </article>
             <article className="sales-kpi">

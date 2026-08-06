@@ -33,6 +33,8 @@ const HISTORY_FALLBACK: HistoryRow[] = [
   { snapshotDate: "2026-08-02", dataThrough: "2026-08-01", period: "2026-08", status: "IN PROGRESS", center: "Voorhees", totalMembers: 482, bomApm: 404, activePaying: 404, drops: 44, signups: 1, signupGoal: 52, scheduled: 4, attended: 3, closed: 1, callMinutes: 22.87 },
 ];
 const pct = (top: number, bottom: number) => bottom ? (top / bottom) * 100 : 0;
+const RATE_GOAL = 70;
+const CALL_MINUTE_GOAL = 3000;
 const periodLabel = (period: string) => {
   const [year, month] = period.split("-").map(Number);
   return new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -41,6 +43,7 @@ const periodLabel = (period: string) => {
 export default function HistoryDashboard() {
   const [rows, setRows] = useState<HistoryRow[]>(HISTORY_FALLBACK);
   const [selectedPeriod, setSelectedPeriod] = useState("2026-07");
+  const [expandedCenter, setExpandedCenter] = useState<string | null>(null);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -97,6 +100,8 @@ export default function HistoryDashboard() {
     bomApm: sum.bomApm + row.bomApm,
   }), { scheduled: 0, attended: 0, closed: 0, signups: 0, callMinutes: 0, activePaying: 0, drops: 0, bomApm: 0 });
   const status = selectedRows[0]?.status ?? "IN PROGRESS";
+  const regionalSignupGoal = selectedRows.reduce((sum, row) => sum + row.signupGoal, 0);
+  const regionalCallGoal = selectedRows.length * CALL_MINUTE_GOAL;
   const dataThrough = selectedRows[0]?.dataThrough || "2026-07-29";
   const statusForPeriod = (period: string) => rows.some((row) => row.period === period && row.status === "FINAL") ? "final" : "in progress";
 
@@ -117,27 +122,39 @@ export default function HistoryDashboard() {
       </section>
 
       <section className="history-totals">
-        <article><small>SIGN-UPS</small><strong>{totals.signups}</strong><span>regional MTD</span></article>
-        <article><small>SHOW RATE</small><strong>{pct(totals.attended, totals.scheduled).toFixed(1)}%</strong><span>{totals.attended} of {totals.scheduled}</span></article>
-        <article><small>CLOSE RATE</small><strong>{pct(totals.closed, totals.attended).toFixed(1)}%</strong><span>{totals.closed} of {totals.attended}</span></article>
-        <article><small>TALK TIME</small><strong>{totals.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><span>regional minutes</span></article>
+        <article className={totals.signups >= regionalSignupGoal ? "goal-hit" : ""}><small>SIGN-UPS</small><strong>{totals.signups}</strong><span>{totals.signups >= regionalSignupGoal ? `★ Regional goal of ${regionalSignupGoal} hit` : `${regionalSignupGoal - totals.signups} to regional goal`}</span></article>
+        <article className={pct(totals.attended, totals.scheduled) >= RATE_GOAL ? "goal-hit" : ""}><small>SHOW RATE</small><strong>{pct(totals.attended, totals.scheduled).toFixed(1)}%</strong><span>{totals.attended} of {totals.scheduled} · goal {RATE_GOAL}%</span></article>
+        <article className={pct(totals.closed, totals.attended) >= RATE_GOAL ? "goal-hit" : ""}><small>CLOSE RATE</small><strong>{pct(totals.closed, totals.attended).toFixed(1)}%</strong><span>{totals.closed} of {totals.attended} · goal {RATE_GOAL}%</span></article>
+        <article className={totals.callMinutes >= regionalCallGoal ? "goal-hit" : ""}><small>TALK TIME</small><strong>{totals.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><span>{totals.callMinutes >= regionalCallGoal ? `★ ${regionalCallGoal.toLocaleString()}-minute goal hit` : `${(regionalCallGoal - totals.callMinutes).toLocaleString(undefined, { maximumFractionDigits: 0 })} to goal`}</span></article>
         <article><small>ATTRITION</small><strong>{pct(totals.drops, totals.bomApm).toFixed(1)}%</strong><span>{totals.drops} drops ÷ {totals.bomApm.toLocaleString()} BOM APM</span></article>
         <article><small>ACTIVE PAYING</small><strong>{totals.activePaying.toLocaleString()}</strong><span>across four centers</span></article>
       </section>
 
-      <div className="overview-section-head"><div><p className="kicker">CENTER HISTORY</p><h2>{periodLabel(selectedPeriod)} snapshot</h2></div><span>Latest retained record for each center</span></div>
+      <div className="overview-section-head"><div><p className="kicker">CENTER HISTORY</p><h2>{periodLabel(selectedPeriod)} snapshot</h2></div><span>Select a center card for its complete breakdown</span></div>
       <section className="history-center-grid">
-        {selectedRows.map((row) => <article key={row.center}>
-          <div><small>{row.status}</small><h3>{row.center}</h3></div>
-          <dl>
-            <div><dt>SIGN-UPS</dt><dd>{row.signups} <small>/ {row.signupGoal}</small></dd></div>
-            <div><dt>SHOW</dt><dd>{pct(row.attended, row.scheduled).toFixed(1)}%</dd></div>
-            <div><dt>CLOSE</dt><dd>{pct(row.closed, row.attended).toFixed(1)}%</dd></div>
-            <div><dt>CALL MIN.</dt><dd>{row.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</dd></div>
-            <div><dt>ATTRITION</dt><dd>{pct(row.drops, row.bomApm).toFixed(1)}%</dd></div>
-            <div><dt>ACTIVE PAYING</dt><dd>{row.activePaying}</dd></div>
-          </dl>
-        </article>)}
+        {selectedRows.map((row) => {
+          const isExpanded = expandedCenter === row.center;
+          const showRate = pct(row.attended, row.scheduled);
+          const closeRate = pct(row.closed, row.attended);
+          return <article className={`history-center-card ${isExpanded ? "expanded" : ""}`} key={row.center}>
+            <button type="button" onClick={() => setExpandedCenter(isExpanded ? null : row.center)} aria-expanded={isExpanded}>
+              <div className="history-card-heading"><div><small>{row.status}</small><h3>{row.center}</h3></div><span>{isExpanded ? "Close ×" : "View details +"}</span></div>
+              <dl>
+                <div className={row.signups >= row.signupGoal ? "goal-hit" : ""}><dt>SIGN-UPS</dt><dd>{row.signups} <small>/ {row.signupGoal}</small></dd></div>
+                <div className={showRate >= RATE_GOAL ? "goal-hit" : ""}><dt>SHOW</dt><dd>{showRate.toFixed(1)}%</dd></div>
+                <div className={closeRate >= RATE_GOAL ? "goal-hit" : ""}><dt>CLOSE</dt><dd>{closeRate.toFixed(1)}%</dd></div>
+                <div className={row.callMinutes >= CALL_MINUTE_GOAL ? "goal-hit" : ""}><dt>CALL MIN.</dt><dd>{row.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</dd></div>
+                <div><dt>ATTRITION</dt><dd>{pct(row.drops, row.bomApm).toFixed(1)}%</dd></div>
+                <div><dt>APM</dt><dd>{row.activePaying}</dd></div>
+              </dl>
+            </button>
+            {isExpanded && <div className="history-center-breakdown">
+              <section><small>TRIAL PERFORMANCE</small><div><span>Scheduled <b>{row.scheduled}</b></span><span>Attended <b>{row.attended}</b></span><span>Signed <b>{row.closed}</b></span><span>No shows <b>{Math.max(0, row.scheduled - row.attended)}</b></span></div></section>
+              <section><small>MEMBERSHIP &amp; SALES</small><div><span>BOM APM <b>{row.bomApm}</b></span><span>Active paying <b>{row.activePaying}</b></span><span>Total members <b>{row.totalMembers}</b></span><span>Drops <b>{row.drops}</b></span></div></section>
+              <section><small>GOAL RESULTS</small><div><span>Sales goal <b>{row.signupGoal}</b></span><span>Sales result <b>{row.signups}</b></span><span>Call goal <b>{CALL_MINUTE_GOAL.toLocaleString()}</b></span><span>Call result <b>{row.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</b></span></div></section>
+            </div>}
+          </article>;
+        })}
       </section>
 
       <section className="history-coming">
