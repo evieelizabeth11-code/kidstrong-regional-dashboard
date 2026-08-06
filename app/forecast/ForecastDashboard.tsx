@@ -16,6 +16,7 @@ const MAX_FORECAST_MONTHS = 60;
 type TrialTotals = { scheduled: number; showed: number; closed: number };
 type MonthlyAttrition = { period: string; rate: number };
 type AttritionHistory = Record<string, MonthlyAttrition[]>;
+type RollingBaseline = { leads90: number; leadToBooked: number; showRate: number; closeRate: number; completedSales: [number, number, number] };
 type ForecastInput = CenterMembership & TrialTotals;
 type MilestoneForecast = { payoutDate: Date; projectedApm: number } | null;
 type ForecastCenter = ForecastInput & {
@@ -29,6 +30,8 @@ type ForecastCenter = ForecastInput & {
   attritionLockedOn: Date;
   projectedMonthlyTrials: number;
   projectedMonthlyTrialSigns: number;
+  projectedMonthlyOtherSales: number;
+  projectedMonthlyTotalSales: number;
   projectedMonthlyAttrition: number;
   projectedNextPayoutApm: number;
   milestones: number[];
@@ -41,12 +44,19 @@ const SEEDED_ATTRITION_HISTORY: AttritionHistory = {
   Voorhees: [{ period: "2026-05", rate: .102 }, { period: "2026-06", rate: .092 }, { period: "2026-07", rate: .072 }],
 };
 
+// Looker Studio rolling 90-day funnel and the three most recently completed months of total sales.
+const ROLLING_BASELINES: Record<string, RollingBaseline> = {
+  Brick: { leads90: 720, leadToBooked: .318, showRate: .642, closeRate: .428, completedSales: [68, 36, 33] },
+  "Mount Laurel": { leads90: 302, leadToBooked: .629, showRate: .668, closeRate: .489, completedSales: [49, 34, 46] },
+  Turnersville: { leads90: 297, leadToBooked: .569, showRate: .619, closeRate: .537, completedSales: [33, 30, 36] },
+  Voorhees: { leads90: 307, leadToBooked: .645, showRate: .636, closeRate: .514, completedSales: [38, 35, 50] },
+};
+
 const initialForecasts: ForecastInput[] = membershipData.map((membership) => {
   const trial = reports.find((report) => report.center === membership.center);
   return { ...membership, scheduled: trial?.scheduled ?? 0, showed: trial?.showed ?? 0, closed: trial?.closed ?? 0 };
 });
 
-const pct = (top: number, bottom: number) => bottom ? (top / bottom) * 100 : 0;
 const payoutLabel = (date: Date) => date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 const periodLabel = (period: string) => {
   const [year, month] = period.split("-").map(Number);
@@ -67,8 +77,9 @@ function enrichCenter(item: ForecastInput, attritionHistory: AttritionHistory): 
   dataThrough.setDate(dataThrough.getDate() - 1);
   const elapsedDays = Math.max(1, dataThrough.getDate());
   const daysInMonth = new Date(dataThrough.getFullYear(), dataThrough.getMonth() + 1, 0).getDate();
-  const showRate = item.scheduled ? item.showed / item.scheduled : 0;
-  const closeRate = item.showed ? item.closed / item.showed : 0;
+  const baseline = ROLLING_BASELINES[item.center];
+  const showRate = baseline?.showRate ?? (item.scheduled ? item.showed / item.scheduled : 0);
+  const closeRate = baseline?.closeRate ?? (item.showed ? item.closed / item.showed : 0);
   const currentPeriod = `${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, "0")}`;
   const attritionMonths = (attritionHistory[item.center] ?? [])
     .filter((month) => month.period < currentPeriod)
@@ -77,8 +88,11 @@ function enrichCenter(item: ForecastInput, attritionHistory: AttritionHistory): 
   const rollingRate = attritionMonths.length ? attritionMonths.reduce((sum, month) => sum + month.rate, 0) / attritionMonths.length : 0;
   // Brick's early commitment period suppresses observed churn. Use a conservative floor until post-commitment data matures.
   const attritionRate = item.center === "Brick" && currentPeriod < "2026-12" ? Math.max(.05, rollingRate) : rollingRate;
-  const projectedMonthlyTrials = (item.scheduled / elapsedDays) * daysInMonth;
+  const projectedMonthlyTrials = baseline ? (baseline.leads90 / 3) * baseline.leadToBooked : (item.scheduled / elapsedDays) * daysInMonth;
   const projectedMonthlyTrialSigns = projectedMonthlyTrials * showRate * closeRate;
+  const recentMonthlySales = baseline ? baseline.completedSales.reduce((sum, sales) => sum + sales, 0) / baseline.completedSales.length : projectedMonthlyTrialSigns;
+  const projectedMonthlyOtherSales = Math.max(0, recentMonthlySales - projectedMonthlyTrialSigns);
+  const projectedMonthlyTotalSales = projectedMonthlyTrialSigns + projectedMonthlyOtherSales;
   const projectedMonthlyAttrition = item.bomApm * attritionRate;
   return {
     ...item,
@@ -92,21 +106,23 @@ function enrichCenter(item: ForecastInput, attritionHistory: AttritionHistory): 
     attritionLockedOn: new Date(reportDate.getFullYear(), reportDate.getMonth(), 1),
     projectedMonthlyTrials,
     projectedMonthlyTrialSigns,
+    projectedMonthlyOtherSales,
+    projectedMonthlyTotalSales,
     projectedMonthlyAttrition,
-    projectedNextPayoutApm: item.bomApm + projectedMonthlyTrialSigns - projectedMonthlyAttrition,
+    projectedNextPayoutApm: item.bomApm + projectedMonthlyTotalSales - projectedMonthlyAttrition,
     milestones: milestoneList(item.center, item.bomApm),
   };
 }
 
 function forecastMilestone(center: ForecastCenter, target: number, closeRate = center.closeRate): MilestoneForecast {
   if (center.bomApm >= target) return { payoutDate: new Date(center.dataThrough.getFullYear(), center.dataThrough.getMonth() + 1, 1), projectedApm: center.bomApm };
-  const monthlyTrialSigns = center.projectedMonthlyTrials * center.showRate * closeRate;
-  if (!monthlyTrialSigns || monthlyTrialSigns <= center.projectedMonthlyAttrition) return null;
+  const monthlyTotalSales = center.projectedMonthlyOtherSales + center.projectedMonthlyTrials * center.showRate * closeRate;
+  if (!monthlyTotalSales || monthlyTotalSales <= center.projectedMonthlyAttrition) return null;
 
   let projectedApm = center.bomApm;
   const payoutDate = new Date(center.dataThrough.getFullYear(), center.dataThrough.getMonth() + 1, 1);
   for (let month = 0; month < MAX_FORECAST_MONTHS; month += 1) {
-    projectedApm += monthlyTrialSigns - projectedApm * center.attritionRate;
+    projectedApm += monthlyTotalSales - projectedApm * center.attritionRate;
     if (projectedApm >= target) return { payoutDate: new Date(payoutDate), projectedApm };
     payoutDate.setMonth(payoutDate.getMonth() + 1);
   }
@@ -216,7 +232,7 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
       </section>}
 
       <section className="forecast-method">
-        <span>i</span><div><small>HOW THE FORECAST WORKS</small><strong>Trial pace × show rate × close rate − rolling attrition = projected APM</strong><p>The three most recently completed months are averaged and locked on the first of each month. Milestones are evaluated after each completed month, and payout dates always fall on the first.</p></div>
+        <span>i</span><div><small>HOW THE FORECAST WORKS</small><strong>90-day trial pace × show rate × close rate + non-trial sales − rolling attrition = projected APM</strong><p>The Looker funnel and three most recently completed sales months establish the operating baseline. Attrition is refreshed from the prior three completed months, milestones are evaluated after each completed month, and achievement dates always fall on the first.</p></div>
       </section>
 
       <section className={`forecast-center-grid ${centerId ? "single-center" : ""}`}>
@@ -227,9 +243,10 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
           const nextPayoutDate = new Date(center.dataThrough.getFullYear(), center.dataThrough.getMonth() + 1, 1);
           const selectedCloseRate = scenarioRates[center.center] ?? center.closeRate;
           const scenarioForecast = nextMilestone ? forecastMilestone(center, nextMilestone, selectedCloseRate) : null;
-          const scenarioSigns = center.projectedMonthlyTrials * center.showRate * selectedCloseRate;
+          const scenarioTrialSigns = center.projectedMonthlyTrials * center.showRate * selectedCloseRate;
+          const scenarioTotalSales = scenarioTrialSigns + center.projectedMonthlyOtherSales;
           const breakEvenCloseRate = center.projectedMonthlyTrials && center.showRate
-            ? center.projectedMonthlyAttrition / (center.projectedMonthlyTrials * center.showRate)
+            ? Math.max(0, (center.projectedMonthlyAttrition - center.projectedMonthlyOtherSales) / (center.projectedMonthlyTrials * center.showRate))
             : 0;
           const monthsSaved = nextForecast && scenarioForecast
             ? Math.max(0, (nextForecast.payoutDate.getFullYear() - scenarioForecast.payoutDate.getFullYear()) * 12 + nextForecast.payoutDate.getMonth() - scenarioForecast.payoutDate.getMonth())
@@ -242,8 +259,8 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
             </div>
 
             <div className="forecast-rate-strip" aria-label={`${center.center} forecast rates`}>
-              <div><small>SHOW RATE</small><strong>{pct(center.showed, center.scheduled).toFixed(1)}%</strong><span>{center.showed} of {center.scheduled}</span></div>
-              <div><small>CLOSE RATE</small><strong>{pct(center.closed, center.showed).toFixed(1)}%</strong><span>{center.closed} of {center.showed}</span></div>
+              <div><small>90-DAY SHOW RATE</small><strong>{(center.showRate * 100).toFixed(1)}%</strong><span>Looker rolling baseline</span></div>
+              <div><small>90-DAY CLOSE RATE</small><strong>{(center.closeRate * 100).toFixed(1)}%</strong><span>Looker rolling baseline</span></div>
               <div><small>3-MONTH ATTRITION</small><strong>{(center.attritionRate * 100).toFixed(1)}%</strong><span>{center.attritionMonths.map((month) => `${periodLabel(month.period)} ${(month.rate * 100).toFixed(1)}%`).join(" · ")}</span></div>
             </div>
 
@@ -259,9 +276,9 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
             </section>}
 
             <div className="forecast-pace-equation">
-              <div><small>TRIAL VOLUME</small><strong>{Math.round(center.projectedMonthlyTrials)}</strong><span>projected per month</span></div><b>×</b>
-              <div><small>SHOW × CLOSE</small><strong>{(center.showRate * 100).toFixed(0)}% × {(center.closeRate * 100).toFixed(0)}%</strong><span>current conversion</span></div><b>=</b>
-              <div className="positive"><small>PROJECTED TRIAL SIGNS</small><strong>{center.projectedMonthlyTrialSigns.toFixed(1)}</strong><span>before attrition</span></div>
+              <div><small>90-DAY TRIAL PACE</small><strong>{Math.round(center.projectedMonthlyTrials)}</strong><span>rolling monthly baseline</span></div><b>×</b>
+              <div><small>SHOW × CLOSE</small><strong>{(center.showRate * 100).toFixed(0)}% × {(center.closeRate * 100).toFixed(0)}%</strong><span>rolling conversion</span></div><b>=</b>
+              <div className="positive"><small>PROJECTED TOTAL SALES</small><strong>{center.projectedMonthlyTotalSales.toFixed(1)}</strong><span>{center.projectedMonthlyTrialSigns.toFixed(1)} trial + {center.projectedMonthlyOtherSales.toFixed(1)} other</span></div>
             </div>
 
             {nextMilestone && <section className="forecast-scenario-tool">
@@ -270,7 +287,7 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
                 {[center.closeRate, .5, .6, .7].map((rate, index) => <button className={Math.abs(selectedCloseRate - rate) < .001 ? "active" : ""} key={`${center.center}-${index}`} onClick={() => setScenarioRates((current) => ({ ...current, [center.center]: rate }))}>{index === 0 ? `CURRENT ${(rate * 100).toFixed(0)}%` : `${(rate * 100).toFixed(0)}% CLOSE`}</button>)}
               </div>
               <div className="forecast-scenario-result" aria-live="polite">
-                <div><small>MONTHLY TRIAL SIGNS</small><strong>{scenarioSigns.toFixed(1)}</strong><span>{(scenarioSigns - center.projectedMonthlyTrialSigns) >= .05 ? `+${(scenarioSigns - center.projectedMonthlyTrialSigns).toFixed(1)} vs. today` : "at today's rate"}</span></div>
+                <div><small>PROJECTED MONTHLY SALES</small><strong>{scenarioTotalSales.toFixed(1)}</strong><span>{scenarioTrialSigns.toFixed(1)} trial + {center.projectedMonthlyOtherSales.toFixed(1)} other</span></div>
                 <div className={scenarioForecast ? "scenario-date-ready" : ""}><small>ESTIMATED ACHIEVED BY</small><strong>{scenarioForecast ? payoutLabel(scenarioForecast.payoutDate) : "No estimate yet"}</strong><span>{scenarioForecast ? `${Math.round(scenarioForecast.projectedApm)} projected APM` : `${Math.ceil(breakEvenCloseRate * 100)}% close needed to begin net growth at this volume`}</span></div>
                 <div className={monthsSaved || createsPath ? "accelerated" : ""}><small>TIME SAVED</small><strong>{createsPath ? "New achievable path" : monthsSaved ? `${monthsSaved} month${monthsSaved === 1 ? "" : "s"}` : nextForecast && scenarioForecast ? "0 months" : "Not calculable yet"}</strong><span>{createsPath ? "current rate has no achievement date" : monthsSaved ? "faster than today's rate" : nextForecast && scenarioForecast ? "already at the earliest first-of-month date" : "close rate alone does not yet overcome attrition"}</span></div>
               </div>
@@ -293,7 +310,7 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
         })}
       </section>
 
-      <footer>Forecast basis: official trials plus the prior three finalized months of attrition <span>Milestones continue every 50 APM after 550</span></footer>
+      <footer>Forecast basis: Looker rolling 90-day funnel, three completed months of sales, and rolling attrition <span>Milestones continue every 50 APM after 550</span></footer>
     </div>
   </main>;
 }
