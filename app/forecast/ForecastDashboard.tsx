@@ -9,8 +9,8 @@ import { reports } from "../trial-data";
 const DASHBOARD_FEED_URL = "/api/dashboard-feed";
 const HISTORY_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000008&single=true&output=csv";
 const STANDARD_MILESTONE_CENTERS = new Set(["Mount Laurel", "Turnersville", "Voorhees"]);
-const FIRST_BONUS_MILESTONE = 550;
-const BONUS_STEP = 50;
+const FIRST_STANDARD_MILESTONE = 550;
+const MILESTONE_STEP = 50;
 const MAX_FORECAST_MONTHS = 60;
 
 type TrialTotals = { scheduled: number; showed: number; closed: number };
@@ -56,8 +56,8 @@ const periodLabel = (period: string) => {
 const milestoneList = (center: string, apm: number) => {
   const milestones: number[] = [];
   if (STANDARD_MILESTONE_CENTERS.has(center)) milestones.push(500);
-  const highestVisibleBonus = Math.max(700, Math.ceil(Math.max(apm, FIRST_BONUS_MILESTONE) / BONUS_STEP) * BONUS_STEP + 150);
-  for (let target = FIRST_BONUS_MILESTONE; target <= highestVisibleBonus; target += BONUS_STEP) milestones.push(target);
+  const highestVisibleMilestone = Math.max(700, Math.ceil(Math.max(apm, FIRST_STANDARD_MILESTONE) / MILESTONE_STEP) * MILESTONE_STEP + 150);
+  for (let target = FIRST_STANDARD_MILESTONE; target <= highestVisibleMilestone; target += MILESTONE_STEP) milestones.push(target);
   return milestones;
 };
 
@@ -113,7 +113,7 @@ function forecastMilestone(center: ForecastCenter, target: number, closeRate = c
   return null;
 }
 
-export default function ForecastDashboard() {
+export default function ForecastDashboard({ centerId }: { centerId?: string }) {
   const [forecastInputs, setForecastInputs] = useState<ForecastInput[]>(initialForecasts);
   const [attritionHistory, setAttritionHistory] = useState<AttritionHistory>(SEEDED_ATTRITION_HISTORY);
   const [scenarioRates, setScenarioRates] = useState<Record<string, number>>({});
@@ -172,7 +172,9 @@ export default function ForecastDashboard() {
     loadFinalizedAttrition();
   }, []);
 
-  const forecasts = useMemo(() => forecastInputs.map((item) => enrichCenter(item, attritionHistory)), [forecastInputs, attritionHistory]);
+  const forecasts = useMemo(() => forecastInputs
+    .filter((item) => !centerId || reports.find((report) => report.center === item.center)?.id === centerId)
+    .map((item) => enrichCenter(item, attritionHistory)), [forecastInputs, attritionHistory, centerId]);
   const regionalApm = forecasts.reduce((sum, item) => sum + item.bomApm, 0);
   const projectedRegionalApm = forecasts.reduce((sum, item) => sum + item.projectedNextPayoutApm, 0);
   const centersReachingNextMilestone = forecasts.filter((center) => {
@@ -183,31 +185,41 @@ export default function ForecastDashboard() {
     return projected?.payoutDate.getTime() === nextPayout.getTime();
   }).length;
   const latestDataThrough = forecasts.map((item) => item.dataThrough).sort((a, b) => b.getTime() - a.getTime())[0];
+  const selectedCenter = forecasts[0];
 
   return <main className="forecast-page">
     <header className="navy-header brandless-header">
-      <div className="header-title"><span>MEMBERSHIP GROWTH FORECAST</span><strong>MILESTONE ROADMAP</strong></div>
+      <div className="header-title"><span>MEMBERSHIP FORECAST</span><strong>{selectedCenter?.center.toUpperCase() ?? "MILESTONE ROADMAP"}</strong></div>
       <ReportingPeriodNav />
     </header>
 
     <div className="page-shell forecast-shell">
+      {centerId && <nav className="detail-nav" aria-label="Center navigation">
+        <Link href="/">← All centers</Link>
+        <div className="section-tabs">
+          <Link href={`/centers/${centerId}`}>Overview</Link>
+          <Link href={`/centers/${centerId}/trials`}>Trials</Link>
+          <Link href={`/centers/${centerId}/calls`}>Calls</Link>
+          <Link href={`/centers/${centerId}/membership`}>Membership</Link>
+          <Link className="active" href={`/centers/${centerId}/forecast`}>Forecast</Link>
+        </div>
+      </nav>}
       <section className="forecast-hero">
-        <div><p className="kicker">LIVE MEMBERSHIP FORECAST</p><h1>See the road to every <span>bonus milestone.</span></h1><p>Compare today&apos;s close rate with 50%, 60%, and 70% to see how stronger conversion can move a milestone—and its payout—closer.</p></div>
-        <Link href="/">← Live dashboard</Link>
+        <div><p className="kicker">{selectedCenter?.center.toUpperCase() ?? "LIVE"} MEMBERSHIP FORECAST</p><h1>See the road to every <span>membership milestone.</span></h1><p>Compare today&apos;s close rate with 50%, 60%, and 70% to see how stronger conversion can move the next milestone closer.</p></div>
       </section>
 
-      <section className="forecast-regional-strip" aria-label="Regional forecast summary">
+      {!centerId && <section className="forecast-regional-strip" aria-label="Regional forecast summary">
         <article><small>REGIONAL APM</small><strong>{regionalApm.toLocaleString()}</strong><span>active paying members today</span></article>
         <article className={projectedRegionalApm >= regionalApm ? "growing" : "declining"}><small>NEXT PAYOUT-DATE APM</small><strong>{Math.round(projectedRegionalApm).toLocaleString()}</strong><span>projected across four centers</span></article>
         <article><small>NEXT-MONTH MILESTONES</small><strong>{centersReachingNextMilestone} <em>of {forecasts.length}</em></strong><span>centers projected to cross their next target</span></article>
         <article><small>DATA THROUGH</small><strong>{latestDataThrough?.toLocaleDateString("en-US", { month: "short", day: "numeric" }) ?? "—"}</strong><span>forecast refreshes with the live feed</span></article>
-      </section>
+      </section>}
 
       <section className="forecast-method">
         <span>i</span><div><small>HOW THE FORECAST WORKS</small><strong>Trial pace × show rate × close rate − rolling attrition = projected APM</strong><p>The three most recently completed months are averaged and locked on the first of each month. Milestones are evaluated after each completed month, and payout dates always fall on the first.</p></div>
       </section>
 
-      <section className="forecast-center-grid">
+      <section className={`forecast-center-grid ${centerId ? "single-center" : ""}`}>
         {forecasts.map((center) => {
           const nextMilestone = center.milestones.find((target) => target > center.bomApm);
           const membersNeeded = nextMilestone ? nextMilestone - center.bomApm : 0;
@@ -238,7 +250,7 @@ export default function ForecastDashboard() {
             </section>
 
             {nextMilestone && <section className={`forecast-next-target ${nextForecast === null ? "off-pace" : ""}`}>
-              <div><span>★</span><div><small>NEXT {nextMilestone === 500 ? "MEMBERSHIP" : "BONUS"} MILESTONE</small><strong>{nextMilestone} APM</strong></div></div>
+              <div><span>★</span><div><small>NEXT MEMBERSHIP MILESTONE</small><strong>{nextMilestone} APM</strong></div></div>
               <div><strong>{membersNeeded}</strong><span>members needed today</span></div>
               <div><strong>{nextForecast ? payoutLabel(nextForecast.payoutDate) : "Not reached at current rates"}</strong><span>{nextForecast ? `Projected ${Math.round(nextForecast.projectedApm)} APM at payout` : "Increase trial volume, show rate, or close rate—or reduce attrition"}</span></div>
             </section>}
@@ -269,7 +281,7 @@ export default function ForecastDashboard() {
                 return <div className={`${achieved ? "achieved" : ""} ${isNext ? "next" : ""}`} key={target}>
                   <span>{achieved ? "✓" : target === 500 ? "◆" : "★"}</span>
                   <strong>{target}</strong>
-                  <small>{target === 500 ? "BIG MILESTONE · NO BONUS" : "BONUS MILESTONE"}</small>
+                  <small>MEMBERSHIP MILESTONE</small>
                   <p>{achieved ? "ACHIEVED" : projection ? payoutLabel(projection.payoutDate) : "Not reached at current rates"}</p>
                 </div>;
               })}
@@ -278,7 +290,7 @@ export default function ForecastDashboard() {
         })}
       </section>
 
-      <footer>Forecast basis: official trials plus the prior three finalized months of attrition <span>Bonus milestones continue every 50 APM after 550</span></footer>
+      <footer>Forecast basis: official trials plus the prior three finalized months of attrition <span>Milestones continue every 50 APM after 550</span></footer>
     </div>
   </main>;
 }

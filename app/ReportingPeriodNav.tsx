@@ -5,7 +5,6 @@ export default function ReportingPeriodNav() {
     <div className="reporting-period-nav">
       <div><small>REPORTING PERIOD</small><strong>August 2026</strong></div>
       <span>IN PROGRESS</span>
-      <Link href="/forecast">Forecast →</Link>
       <Link href="/history">View history →</Link>
       <Link className="daily-upload-link" href="/admin/scorecard">Daily upload</Link>
     </div>

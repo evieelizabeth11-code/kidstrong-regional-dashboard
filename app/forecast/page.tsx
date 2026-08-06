@@ -1,11 +1,5 @@
-import type { Metadata } from "next";
-import ForecastDashboard from "./ForecastDashboard";
-
-export const metadata: Metadata = {
-  title: "Membership Forecast | KidStrong Regional Dashboard",
-  description: "Live membership milestone forecasts for the Southern New Jersey centers.",
-};
+import { redirect } from "next/navigation";
 
 export default function ForecastPage() {
-  return <ForecastDashboard />;
+  redirect("/");
 }

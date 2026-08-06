@@ -27,7 +27,7 @@ const progressTone = (value: number) =>
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
 const CALL_PUSH_GOALS = [3500, 4000];
 const MEMBERSHIP_FEED_URL = "/api/dashboard-feed";
-type Section = "overview" | "trials" | "calls" | "membership";
+type Section = "overview" | "trials" | "calls" | "membership" | "forecast";
 
 export default function CenterDetail({ centerId, section }: { centerId: string; section: Section }) {
   const [dayFilter, setDayFilter] = useState("All days");
@@ -251,6 +251,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             <Link className={section === "trials" ? "active" : ""} href={`/centers/${centerId}/trials`}>Trials</Link>
             <Link className={section === "calls" ? "active" : ""} href={`/centers/${centerId}/calls`}>Calls</Link>
             <Link className={section === "membership" ? "active" : ""} href={`/centers/${centerId}/membership`}>Membership</Link>
+            <Link className={section === "forecast" ? "active" : ""} href={`/centers/${centerId}/forecast`}>Forecast</Link>
           </div>
         </nav>
 
@@ -313,6 +314,9 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             </Link>
             <Link href={`/centers/${centerId}/membership`} className={`center-section-card ${!membership ? "unavailable" : ""}`}>
               <div><small>MEMBERSHIP</small><strong>{membership ? `${membership.signups.current} of ${membership.signups.goal} sign-ups` : "Data coming soon"}</strong><span>{membership ? `${signupGoalPct.toFixed(1)}% of monthly goal · ${paceLabel}` : "Membership health has not been added yet"}</span></div>{membership && <i><em style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i>}<b>{membership ? "View membership details →" : "Awaiting data"}</b>
+            </Link>
+            <Link href={`/centers/${centerId}/forecast`} className="center-section-card forecast-card-link">
+              <div><small>FORECAST</small><strong>{membership ? `${membership.bomApm} APM today` : "Data coming soon"}</strong><span>Explore milestone dates at current, 50%, 60%, and 70% close rates</span></div><b>View membership forecast →</b>
             </Link>
           </section>
 
