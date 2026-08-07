@@ -151,6 +151,23 @@ function projectOctoberApm(center: ForecastCenter, monthlySales: number, holdMov
   return septemberApm * retention + monthlySales + holdMovement[1];
 }
 
+function buildMonthlyOutlook(center: ForecastCenter, holdMovement: [number, number]) {
+  const retention = 1 - center.attritionRate;
+  let projectedApm = center.bomApm;
+  return [
+    new Date("2026-09-01T12:00:00"),
+    new Date("2026-10-01T12:00:00"),
+    new Date("2026-11-01T12:00:00"),
+    new Date("2026-12-01T12:00:00"),
+  ].map((date, index) => {
+    const holdAdjustment = holdMovement[index] ?? 0;
+    const openingApm = projectedApm;
+    const attrition = openingApm * center.attritionRate;
+    projectedApm = openingApm * retention + center.projectedMonthlyTotalSales + holdAdjustment;
+    return { date, projectedApm, sales: center.projectedMonthlyTotalSales, attrition, holdAdjustment };
+  });
+}
+
 export default function ForecastDashboard({ centerId }: { centerId?: string }) {
   const [forecastInputs, setForecastInputs] = useState<ForecastInput[]>(initialForecasts);
   const [attritionHistory, setAttritionHistory] = useState<AttritionHistory>(SEEDED_ATTRITION_HISTORY);
@@ -274,6 +291,7 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
           const challengeProgress = Math.max(0, Math.min(100, ((center.bomApm - challengeProgressStart) / (challengeTarget - challengeProgressStart)) * 100));
           const monthlySalesGap = Math.max(0, challengeMonthlySales - center.projectedMonthlyTotalSales);
           const projectedOctoberApm = projectOctoberApm(center, center.projectedMonthlyTotalSales, holdMovement);
+          const monthlyOutlook = buildMonthlyOutlook(center, holdMovement);
           const selectedCloseRate = scenarioRates[center.center] ?? center.closeRate;
           const scenarioForecast = nextMilestone ? forecastMilestone(center, nextMilestone, selectedCloseRate) : null;
           const scenarioTrialSigns = center.projectedMonthlyTrials * center.showRate * selectedCloseRate;
@@ -303,6 +321,23 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
                 <div><small>WIN EACH WEEK</small><strong>{Math.ceil(challengeWeeklySales)} sales</strong><span>gross sign-ups needed</span></div>
                 <div><small>MONTHLY TARGET</small><strong>{Math.ceil(challengeMonthlySales)} sales</strong><span>includes attrition replacement</span></div>
                 <div className={projectedOctoberApm >= challengeTarget ? "on-challenge-pace" : "challenge-gap"}><small>OCT 1 AT CURRENT PACE</small><strong>{Math.round(projectedOctoberApm)} APM</strong><span>{projectedOctoberApm >= challengeTarget ? `${Math.round(projectedOctoberApm - challengeTarget)} above the milestone` : `${Math.ceil(monthlySalesGap)} more sales/month unlocks the goal`}</span></div>
+              </div>
+            </section>
+
+            <section className="forecast-monthly-outlook" aria-label={`${center.center} monthly APM forecast`}>
+              <div className="forecast-outlook-head"><div><small>CURRENT-RATE OUTLOOK</small><strong>Where this pace takes the center</strong></div><span>Sales, attrition, and known hold movement included</span></div>
+              <div className="forecast-outlook-grid">
+                {monthlyOutlook.map((month) => {
+                  const hitTarget = month.projectedApm >= challengeTarget;
+                  const change = month.projectedApm - center.bomApm;
+                  return <article className={hitTarget ? "forecast-month-hit" : ""} key={month.date.toISOString()}>
+                    <small>{month.date.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()}</small>
+                    <strong>{Math.round(month.projectedApm)} <em>APM</em></strong>
+                    <span className={change >= 0 ? "positive" : "negative"}>{change >= 0 ? "+" : ""}{Math.round(change)} from today</span>
+                    <p>+{month.sales.toFixed(0)} sales · −{month.attrition.toFixed(0)} attrition{month.holdAdjustment ? ` · +${month.holdAdjustment} holds` : ""}</p>
+                    {hitTarget && <b>★ {challengeTarget} MILESTONE</b>}
+                  </article>;
+                })}
               </div>
             </section>
 

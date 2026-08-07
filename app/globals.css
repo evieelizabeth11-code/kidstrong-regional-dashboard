@@ -917,6 +917,22 @@ footer { font-size:11px; }
 .forecast-challenge-wins .on-challenge-pace strong { color:var(--green); }
 .forecast-challenge-wins .challenge-gap { border-color:rgba(255,209,102,.42);background:rgba(255,209,102,.09); }
 .forecast-challenge-wins .challenge-gap strong { color:#ffd166; }
+.forecast-monthly-outlook { margin:0 14px 14px;padding:15px;border:1px solid rgba(109,231,255,.3);border-radius:12px;background:linear-gradient(145deg,rgba(109,231,255,.08),rgba(2,11,32,.6)); }
+.forecast-outlook-head { display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:12px; }
+.forecast-outlook-head small { display:block;color:#6de7ff;font-size:7px;font-weight:950;letter-spacing:.08em; }
+.forecast-outlook-head strong { display:block;margin-top:4px;font-size:14px; }
+.forecast-outlook-head>span { color:#91a4ca;font-size:7px;font-weight:800; }
+.forecast-outlook-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px; }
+.forecast-outlook-grid article { position:relative;min-height:126px;padding:12px;border:1px solid rgba(255,255,255,.11);border-radius:9px;background:rgba(2,11,32,.58); }
+.forecast-outlook-grid article>small { color:#91a4ca;font-size:7px;font-weight:950;letter-spacing:.08em; }
+.forecast-outlook-grid article>strong { display:block;margin:6px 0 2px;color:#fff;font-size:21px; }
+.forecast-outlook-grid article>strong em { color:#91a4ca;font-size:8px;font-style:normal; }
+.forecast-outlook-grid article>span { display:block;font-size:8px;font-weight:900; }
+.forecast-outlook-grid article>span.positive { color:var(--green); }
+.forecast-outlook-grid article>span.negative { color:#ff8585; }
+.forecast-outlook-grid article p { margin:9px 0 0;color:#91a4ca;font-size:7px;line-height:1.5; }
+.forecast-outlook-grid article b { display:block;margin-top:8px;color:#ffd166;font-size:7px;letter-spacing:.04em; }
+.forecast-outlook-grid article.forecast-month-hit { border-color:rgba(255,209,102,.55);background:linear-gradient(145deg,rgba(255,209,102,.15),rgba(2,11,32,.62));box-shadow:0 0 16px rgba(255,209,102,.1); }
 .forecast-rate-strip { display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 14px 0; }
 .forecast-rate-strip>div { padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:9px;background:rgba(2,11,32,.5); }
 .forecast-rate-strip small,.forecast-rate-strip span { display:block;color:#91a4ca;font-size:7px;font-weight:850; }
@@ -967,4 +983,4 @@ footer { font-size:11px; }
 .forecast-ladder>div.next { border-color:#6de7ff;box-shadow:0 0 17px rgba(109,231,255,.17); }
 
 @media(max-width:1100px){.forecast-center-grid{grid-template-columns:1fr}.forecast-regional-strip{grid-template-columns:1fr 1fr}.forecast-regional-strip article:nth-child(2){border-right:0}}
-@media(max-width:700px){.forecast-hero{align-items:flex-start;flex-direction:column}.forecast-regional-strip{grid-template-columns:1fr}.forecast-regional-strip article{border-right:0;border-bottom:1px solid rgba(255,255,255,.12)}.forecast-card-head{align-items:flex-start;flex-direction:column}.forecast-card-head>div:last-child{width:100%}.forecast-hold-path{align-items:flex-start;flex-direction:column}.forecast-challenge-wins{grid-template-columns:1fr}.forecast-rate-strip{grid-template-columns:1fr}.forecast-next-target{grid-template-columns:1fr}.forecast-next-target>div:not(:first-child){padding:9px 0 0;border-left:0;border-top:1px solid rgba(255,255,255,.14)}.forecast-pace-equation{grid-template-columns:1fr}.forecast-pace-equation>b{display:none}.forecast-scenario-head{align-items:flex-start;flex-direction:column}.forecast-scenario-buttons{grid-template-columns:1fr 1fr}.forecast-scenario-result{grid-template-columns:1fr}}
+@media(max-width:700px){.forecast-hero{align-items:flex-start;flex-direction:column}.forecast-regional-strip{grid-template-columns:1fr}.forecast-regional-strip article{border-right:0;border-bottom:1px solid rgba(255,255,255,.12)}.forecast-card-head{align-items:flex-start;flex-direction:column}.forecast-card-head>div:last-child{width:100%}.forecast-hold-path,.forecast-outlook-head{align-items:flex-start;flex-direction:column}.forecast-challenge-wins,.forecast-outlook-grid{grid-template-columns:1fr}.forecast-rate-strip{grid-template-columns:1fr}.forecast-next-target{grid-template-columns:1fr}.forecast-next-target>div:not(:first-child){padding:9px 0 0;border-left:0;border-top:1px solid rgba(255,255,255,.14)}.forecast-pace-equation{grid-template-columns:1fr}.forecast-pace-equation>b{display:none}.forecast-scenario-head{align-items:flex-start;flex-direction:column}.forecast-scenario-buttons{grid-template-columns:1fr 1fr}.forecast-scenario-result{grid-template-columns:1fr}}
