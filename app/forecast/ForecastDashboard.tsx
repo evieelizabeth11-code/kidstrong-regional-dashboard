@@ -12,12 +12,17 @@ const STANDARD_MILESTONE_CENTERS = new Set(["Mount Laurel", "Turnersville", "Voo
 const FIRST_STANDARD_MILESTONE = 550;
 const MILESTONE_STEP = 50;
 const MAX_FORECAST_MONTHS = 60;
-const OCTOBER_CHALLENGE_DATE = new Date("2026-10-01T12:00:00");
 const OCTOBER_HOLD_PATHS: Record<string, [number, number]> = {
   Brick: [29, 31],
   "Mount Laurel": [28, 29],
   Turnersville: [15, 19],
   Voorhees: [22, 38],
+};
+const GROWTH_CHECKPOINTS: Record<string, number[]> = {
+  Brick: [600, 650, 700],
+  "Mount Laurel": [450, 500],
+  Turnersville: [500, 550],
+  Voorhees: [450, 500],
 };
 
 type TrialTotals = { scheduled: number; showed: number; closed: number };
@@ -64,18 +69,18 @@ const initialForecasts: ForecastInput[] = membershipData.map((membership) => {
   return { ...membership, scheduled: trial?.scheduled ?? 0, showed: trial?.showed ?? 0, closed: trial?.closed ?? 0 };
 });
 
-const payoutLabel = (date: Date) => date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 const periodLabel = (period: string) => {
   const [year, month] = period.split("-").map(Number);
   return new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "short" });
 };
 
 const milestoneList = (center: string, apm: number) => {
-  const milestones: number[] = [];
-  if (STANDARD_MILESTONE_CENTERS.has(center)) milestones.push(500);
+  const milestones: number[] = [...(GROWTH_CHECKPOINTS[center] ?? [])];
+  if (!milestones.length && STANDARD_MILESTONE_CENTERS.has(center)) milestones.push(500);
   const highestVisibleMilestone = Math.max(700, Math.ceil(Math.max(apm, FIRST_STANDARD_MILESTONE) / MILESTONE_STEP) * MILESTONE_STEP + 150);
-  for (let target = FIRST_STANDARD_MILESTONE; target <= highestVisibleMilestone; target += MILESTONE_STEP) milestones.push(target);
-  return milestones;
+  const firstVisibleMilestone = milestones[0] ?? FIRST_STANDARD_MILESTONE;
+  for (let target = FIRST_STANDARD_MILESTONE; target <= highestVisibleMilestone; target += MILESTONE_STEP) if (target >= firstVisibleMilestone && !milestones.includes(target)) milestones.push(target);
+  return milestones.sort((a, b) => a - b);
 };
 
 function enrichCenter(item: ForecastInput, attritionHistory: AttritionHistory): ForecastCenter {
@@ -136,42 +141,11 @@ function forecastMilestone(center: ForecastCenter, target: number, closeRate = c
   return null;
 }
 
-function requiredMonthlySales(center: ForecastCenter, target: number, months: number, holdMovement: [number, number]) {
-  if (center.bomApm >= target || months <= 0) return 0;
-  const retention = 1 - center.attritionRate;
-  const retainedStartingApm = center.bomApm * Math.pow(retention, months);
-  const salesRetentionFactor = Array.from({ length: months }, (_, index) => Math.pow(retention, index)).reduce((sum, factor) => sum + factor, 0);
-  const retainedHoldMovement = holdMovement[0] * retention + holdMovement[1];
-  return Math.max(0, (target - retainedStartingApm - retainedHoldMovement) / salesRetentionFactor);
-}
-
-function projectOctoberApm(center: ForecastCenter, monthlySales: number, holdMovement: [number, number]) {
-  const retention = 1 - center.attritionRate;
-  const septemberApm = center.bomApm * retention + monthlySales + holdMovement[0];
-  return septemberApm * retention + monthlySales + holdMovement[1];
-}
-
-function buildMonthlyOutlook(center: ForecastCenter, holdMovement: [number, number]) {
-  const retention = 1 - center.attritionRate;
-  let projectedApm = center.bomApm;
-  return [
-    new Date("2026-09-01T12:00:00"),
-    new Date("2026-10-01T12:00:00"),
-    new Date("2026-11-01T12:00:00"),
-    new Date("2026-12-01T12:00:00"),
-  ].map((date, index) => {
-    const holdAdjustment = holdMovement[index] ?? 0;
-    const openingApm = projectedApm;
-    const attrition = openingApm * center.attritionRate;
-    projectedApm = openingApm * retention + center.projectedMonthlyTotalSales + holdAdjustment;
-    return { date, projectedApm, sales: center.projectedMonthlyTotalSales, attrition, holdAdjustment };
-  });
-}
-
 export default function ForecastDashboard({ centerId }: { centerId?: string }) {
   const [forecastInputs, setForecastInputs] = useState<ForecastInput[]>(initialForecasts);
   const [attritionHistory, setAttritionHistory] = useState<AttritionHistory>(SEEDED_ATTRITION_HISTORY);
-  const [scenarioRates, setScenarioRates] = useState<Record<string, number>>({});
+  const [scenarioShowRates, setScenarioShowRates] = useState<Record<string, number>>({});
+  const [scenarioCloseRates, setScenarioCloseRates] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const loadForecast = async () => {
@@ -260,7 +234,7 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
         </div>
       </nav>}
       <section className="forecast-hero">
-        <div><p className="kicker">{selectedCenter?.center.toUpperCase() ?? "LIVE"} MEMBERSHIP FORECAST</p><h1>See the road to every <span>membership milestone.</span></h1><p>Compare today&apos;s close rate with 50%, 60%, and 70% to see how stronger conversion can move the next milestone closer.</p></div>
+        <div><p className="kicker">{selectedCenter?.center.toUpperCase() ?? "LIVE"} GROWTH ROADMAP</p><h1>See what moves the <span>membership number.</span></h1><p>Start with the current forecast, then adjust show and close rates to see the direct impact on month-end APM.</p></div>
       </section>
 
       {!centerId && <section className="forecast-regional-strip" aria-label="Regional forecast summary">
@@ -271,73 +245,56 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
       </section>}
 
       <section className="forecast-method">
-        <span>i</span><div><small>HOW THE FORECAST WORKS</small><strong>90-day trial pace × show rate × close rate + non-trial sales − rolling attrition = projected APM</strong><p>The Looker funnel and three most recently completed sales months establish the operating baseline. Attrition is refreshed from the prior three completed months, milestones are evaluated after each completed month, and achievement dates always fall on the first.</p></div>
+        <span>i</span><div><small>HOW THE FORECAST WORKS</small><strong>Trial pace × show rate × close rate + other sales + known hold movement − rolling attrition = month-end APM</strong><p>The sliders change only show and close performance, so the team can see exactly how stronger execution changes the month-end result.</p></div>
       </section>
 
       <section className={`forecast-center-grid ${centerId ? "single-center" : ""}`}>
         {forecasts.map((center) => {
-          const nextMilestone = center.milestones.find((target) => target > center.bomApm);
-          const membersNeeded = nextMilestone ? nextMilestone - center.bomApm : 0;
-          const nextForecast = nextMilestone ? forecastMilestone(center, nextMilestone) : null;
           const nextPayoutDate = new Date(center.dataThrough.getFullYear(), center.dataThrough.getMonth() + 1, 1);
-          const challengeTarget = center.center === "Brick" ? 600 : 500;
+          const checkpoints = GROWTH_CHECKPOINTS[center.center] ?? center.milestones;
+          const nextCheckpoint = checkpoints.find((target) => target > center.bomApm) ?? checkpoints[checkpoints.length - 1];
+          const priorCheckpoint = Math.max(0, nextCheckpoint - 50);
+          const membersNeeded = Math.max(0, nextCheckpoint - center.bomApm);
+          const checkpointProgress = Math.max(0, Math.min(100, ((center.bomApm - priorCheckpoint) / Math.max(1, nextCheckpoint - priorCheckpoint)) * 100));
           const holdMovement = OCTOBER_HOLD_PATHS[center.center] ?? [0, 0];
-          const totalHoldMovement = holdMovement[0] + holdMovement[1];
-          const challengeMonths = Math.max(1, (OCTOBER_CHALLENGE_DATE.getFullYear() - center.dataThrough.getFullYear()) * 12 + OCTOBER_CHALLENGE_DATE.getMonth() - center.dataThrough.getMonth());
-          const challengeMonthlySales = requiredMonthlySales(center, challengeTarget, challengeMonths, holdMovement);
-          const challengeWeeks = Math.max(1, (OCTOBER_CHALLENGE_DATE.getTime() - center.dataThrough.getTime()) / (7 * 24 * 60 * 60 * 1000));
-          const challengeWeeklySales = (challengeMonthlySales * challengeMonths) / challengeWeeks;
-          const challengeProgressStart = challengeTarget === 500 ? 400 : 500;
-          const challengeProgress = Math.max(0, Math.min(100, ((center.bomApm - challengeProgressStart) / (challengeTarget - challengeProgressStart)) * 100));
-          const monthlySalesGap = Math.max(0, challengeMonthlySales - center.projectedMonthlyTotalSales);
-          const projectedOctoberApm = projectOctoberApm(center, center.projectedMonthlyTotalSales, holdMovement);
-          const monthlyOutlook = buildMonthlyOutlook(center, holdMovement);
-          const selectedCloseRate = scenarioRates[center.center] ?? center.closeRate;
-          const scenarioForecast = nextMilestone ? forecastMilestone(center, nextMilestone, selectedCloseRate) : null;
-          const scenarioTrialSigns = center.projectedMonthlyTrials * center.showRate * selectedCloseRate;
+          const currentMonthHoldMovement = holdMovement[0];
+          const currentMonthEndApm = center.bomApm + center.projectedMonthlyTotalSales - center.projectedMonthlyAttrition + currentMonthHoldMovement;
+          const selectedShowRate = scenarioShowRates[center.center] ?? center.showRate;
+          const selectedCloseRate = scenarioCloseRates[center.center] ?? center.closeRate;
+          const scenarioTrialSigns = center.projectedMonthlyTrials * selectedShowRate * selectedCloseRate;
           const scenarioTotalSales = scenarioTrialSigns + center.projectedMonthlyOtherSales;
-          const breakEvenCloseRate = center.projectedMonthlyTrials && center.showRate
-            ? Math.max(0, (center.projectedMonthlyAttrition - center.projectedMonthlyOtherSales) / (center.projectedMonthlyTrials * center.showRate))
-            : 0;
-          const monthsSaved = nextForecast && scenarioForecast
-            ? Math.max(0, (nextForecast.payoutDate.getFullYear() - scenarioForecast.payoutDate.getFullYear()) * 12 + nextForecast.payoutDate.getMonth() - scenarioForecast.payoutDate.getMonth())
-            : 0;
-          const createsPath = !nextForecast && Boolean(scenarioForecast);
+          const scenarioMonthEndApm = center.bomApm + scenarioTotalSales - center.projectedMonthlyAttrition + currentMonthHoldMovement;
+          const scenarioApmLift = scenarioMonthEndApm - currentMonthEndApm;
+          const scenarioSalesLift = scenarioTotalSales - center.projectedMonthlyTotalSales;
           return <article className="forecast-center-card" key={center.center}>
             <div className="forecast-card-head">
               <div><small>{center.center.toUpperCase()}</small><strong>{center.bomApm} <em>APM</em></strong><span>{center.scheduled} trials scheduled through {center.dataThrough.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
-              <div className="forecast-payout-apm"><small>PROJECTED {nextPayoutDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()} APM</small><strong>{Math.round(center.projectedNextPayoutApm)}</strong><span>at current operating rates</span></div>
+              <div className="forecast-payout-apm"><small>PROJECTED {nextPayoutDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()} APM</small><strong>{Math.round(currentMonthEndApm)}</strong><span>current rates + known hold movement</span></div>
             </div>
 
-            <section className="forecast-october-challenge" aria-label={`${center.center} October 1 membership path`}>
+            <section className="forecast-october-challenge" aria-label={`${center.center} growth checkpoint`}>
               <div className="forecast-challenge-heading">
-                <div><small>THE PATH</small><strong>Road to {challengeTarget}</strong><span>October 1 membership target</span></div>
-                <div><strong>{Math.round(projectedOctoberApm)}</strong><span>projected Oct 1 APM</span></div>
+                <div><small>NEXT GROWTH CHECKPOINT</small><strong>{nextCheckpoint} APM</strong><span>Here&apos;s what moves the number this week.</span></div>
+                <div><strong>{membersNeeded}</strong><span>net members to go</span></div>
               </div>
-              <div className="forecast-challenge-track"><span style={{ width: `${challengeProgress}%` }} /></div>
-              <div className="forecast-challenge-labels"><span>{center.bomApm} APM today</span><strong>{challengeTarget} APM by Oct 1</strong></div>
-              <p className="forecast-hold-path"><b>+{totalHoldMovement} known net hold movement included</b><span>+{holdMovement[0]} by Sep 1 · +{holdMovement[1]} by Oct 1</span></p>
-              <div className="forecast-challenge-wins">
-                <div><small>WIN EACH WEEK</small><strong>{Math.ceil(challengeWeeklySales)} sales</strong><span>gross sign-ups needed</span></div>
-                <div><small>MONTHLY TARGET</small><strong>{Math.ceil(challengeMonthlySales)} sales</strong><span>includes attrition replacement</span></div>
-                <div className={projectedOctoberApm >= challengeTarget ? "on-challenge-pace" : "challenge-gap"}><small>OCT 1 AT CURRENT PACE</small><strong>{Math.round(projectedOctoberApm)} APM</strong><span>{projectedOctoberApm >= challengeTarget ? `${Math.round(projectedOctoberApm - challengeTarget)} above the milestone` : `${Math.ceil(monthlySalesGap)} more sales/month unlocks the goal`}</span></div>
+              <div className="forecast-challenge-track"><span style={{ width: `${checkpointProgress}%` }} /></div>
+              <div className="forecast-challenge-labels"><span>{center.bomApm} APM today</span><strong>{nextCheckpoint} APM checkpoint</strong></div>
+              <div className="forecast-checkpoint-row">
+                {checkpoints.map((target) => <div className={center.bomApm >= target ? "achieved" : target === nextCheckpoint ? "next" : ""} key={target}><span>{center.bomApm >= target ? "✓" : "★"}</span><strong>{target}</strong><small>{center.bomApm >= target ? "REACHED" : target === nextCheckpoint ? "NEXT" : "AHEAD"}</small></div>)}
               </div>
             </section>
 
-            <section className="forecast-monthly-outlook" aria-label={`${center.center} monthly APM forecast`}>
-              <div className="forecast-outlook-head"><div><small>CURRENT-RATE OUTLOOK</small><strong>Where this pace takes the center</strong></div><span>Sales, attrition, and known hold movement included</span></div>
-              <div className="forecast-outlook-grid">
-                {monthlyOutlook.map((month) => {
-                  const hitTarget = month.projectedApm >= challengeTarget;
-                  const change = month.projectedApm - center.bomApm;
-                  return <article className={hitTarget ? "forecast-month-hit" : ""} key={month.date.toISOString()}>
-                    <small>{month.date.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()}</small>
-                    <strong>{Math.round(month.projectedApm)} <em>APM</em></strong>
-                    <span className={change >= 0 ? "positive" : "negative"}>{change >= 0 ? "+" : ""}{Math.round(change)} from today</span>
-                    <p>+{month.sales.toFixed(0)} sales · −{month.attrition.toFixed(0)} attrition{month.holdAdjustment ? ` · +${month.holdAdjustment} holds` : ""}</p>
-                    {hitTarget && <b>★ {challengeTarget} MILESTONE</b>}
-                  </article>;
-                })}
+            <section className="forecast-rate-simulator" aria-label={`${center.center} show and close rate simulator`}>
+              <div className="forecast-simulator-head"><div><small>MOVE THE NEEDLE</small><strong>Adjust the rates. See the month-end result.</strong></div><button type="button" onClick={() => { setScenarioShowRates((current) => ({ ...current, [center.center]: center.showRate })); setScenarioCloseRates((current) => ({ ...current, [center.center]: center.closeRate })); }}>Reset to current</button></div>
+              <div className="forecast-slider-grid">
+                <label><span><b>SHOW RATE</b><strong>{(selectedShowRate * 100).toFixed(0)}%</strong></span><input aria-label={`${center.center} show rate`} type="range" min="30" max="100" step="1" value={Math.round(selectedShowRate * 100)} onChange={(event) => setScenarioShowRates((current) => ({ ...current, [center.center]: Number(event.target.value) / 100 }))} /><small>Current: {(center.showRate * 100).toFixed(1)}%</small></label>
+                <label><span><b>CLOSE RATE</b><strong>{(selectedCloseRate * 100).toFixed(0)}%</strong></span><input aria-label={`${center.center} close rate`} type="range" min="20" max="100" step="1" value={Math.round(selectedCloseRate * 100)} onChange={(event) => setScenarioCloseRates((current) => ({ ...current, [center.center]: Number(event.target.value) / 100 }))} /><small>Current: {(center.closeRate * 100).toFixed(1)}%</small></label>
+              </div>
+              <div className="forecast-impact-grid" aria-live="polite">
+                <div><small>AT CURRENT RATES</small><strong>{Math.round(currentMonthEndApm)} APM</strong><span>projected month end</span></div>
+                <div className={scenarioApmLift > .5 ? "improved" : scenarioApmLift < -.5 ? "declined" : ""}><small>WITH THESE RATES</small><strong>{Math.round(scenarioMonthEndApm)} APM</strong><span>{scenarioApmLift >= 0 ? "+" : ""}{scenarioApmLift.toFixed(1)} APM impact</span></div>
+                <div><small>PROJECTED SALES</small><strong>{scenarioTotalSales.toFixed(1)}</strong><span>{scenarioSalesLift >= 0 ? "+" : ""}{scenarioSalesLift.toFixed(1)} vs current rates</span></div>
+                <div><small>KNOWN HOLD MOVEMENT</small><strong>+{currentMonthHoldMovement}</strong><span>included this month</span></div>
               </div>
             </section>
 
@@ -352,42 +309,10 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
               {center.center === "Brick" && <p><b>BRICK NEW-CENTER CAVEAT</b> The observed average is {(center.attritionMonths.reduce((sum, month) => sum + month.rate, 0) / Math.max(1, center.attritionMonths.length) * 100).toFixed(1)}%, but the forecast uses a 5.0% planning floor through November. Six-month founding commitments begin ending September 21.</p>}
             </section>
 
-            {nextMilestone && <section className={`forecast-next-target ${nextForecast === null ? "off-pace" : ""}`}>
-              <div><span>★</span><div><small>NEXT MEMBERSHIP MILESTONE</small><strong>{nextMilestone} APM</strong></div></div>
-              <div><strong>{membersNeeded}</strong><span>members needed today</span></div>
-              <div><small>ESTIMATED ACHIEVEMENT DATE</small><strong>{nextForecast ? payoutLabel(nextForecast.payoutDate) : "No estimate yet"}</strong><span>{nextForecast ? `Projected ${Math.round(nextForecast.projectedApm)} APM at that time` : `Current growth must improve before a reliable date can be calculated`}</span></div>
-            </section>}
-
             <div className="forecast-pace-equation">
               <div><small>90-DAY TRIAL PACE</small><strong>{Math.round(center.projectedMonthlyTrials)}</strong><span>rolling monthly baseline</span></div><b>×</b>
               <div><small>SHOW × CLOSE</small><strong>{(center.showRate * 100).toFixed(0)}% × {(center.closeRate * 100).toFixed(0)}%</strong><span>rolling conversion</span></div><b>=</b>
               <div className="positive"><small>PROJECTED TOTAL SALES</small><strong>{center.projectedMonthlyTotalSales.toFixed(1)}</strong><span>{center.projectedMonthlyTrialSigns.toFixed(1)} trial + {center.projectedMonthlyOtherSales.toFixed(1)} other</span></div>
-            </div>
-
-            {nextMilestone && <section className="forecast-scenario-tool">
-              <div className="forecast-scenario-head"><div><small>WHAT IF WE CLOSE MORE?</small><strong>See how conversion changes the road to {nextMilestone}.</strong></div><span>Selected scenario: {(selectedCloseRate * 100).toFixed(0)}% close</span></div>
-              <div className="forecast-scenario-buttons" role="group" aria-label={`${center.center} close rate scenario`}>
-                {[center.closeRate, .5, .6, .7].map((rate, index) => <button className={Math.abs(selectedCloseRate - rate) < .001 ? "active" : ""} key={`${center.center}-${index}`} onClick={() => setScenarioRates((current) => ({ ...current, [center.center]: rate }))}>{index === 0 ? `CURRENT ${(rate * 100).toFixed(0)}%` : `${(rate * 100).toFixed(0)}% CLOSE`}</button>)}
-              </div>
-              <div className="forecast-scenario-result" aria-live="polite">
-                <div><small>PROJECTED MONTHLY SALES</small><strong>{scenarioTotalSales.toFixed(1)}</strong><span>{scenarioTrialSigns.toFixed(1)} trial + {center.projectedMonthlyOtherSales.toFixed(1)} other</span></div>
-                <div className={scenarioForecast ? "scenario-date-ready" : ""}><small>ESTIMATED ACHIEVED BY</small><strong>{scenarioForecast ? payoutLabel(scenarioForecast.payoutDate) : "No estimate yet"}</strong><span>{scenarioForecast ? `${Math.round(scenarioForecast.projectedApm)} projected APM` : `${Math.ceil(breakEvenCloseRate * 100)}% close needed to begin net growth at this volume`}</span></div>
-                <div className={monthsSaved || createsPath ? "accelerated" : ""}><small>TIME SAVED</small><strong>{createsPath ? "New achievable path" : monthsSaved ? `${monthsSaved} month${monthsSaved === 1 ? "" : "s"}` : nextForecast && scenarioForecast ? "0 months" : "Not calculable yet"}</strong><span>{createsPath ? "current rate has no achievement date" : monthsSaved ? "faster than today's rate" : nextForecast && scenarioForecast ? "already at the earliest first-of-month date" : "close rate alone does not yet overcome attrition"}</span></div>
-              </div>
-            </section>}
-
-            <div className="forecast-ladder">
-              {center.milestones.map((target) => {
-                const achieved = center.bomApm >= target;
-                const projection = achieved ? null : forecastMilestone(center, target);
-                const isNext = target === nextMilestone;
-                return <div className={`${achieved ? "achieved" : ""} ${isNext ? "next" : ""}`} key={target}>
-                  <span>{achieved ? "✓" : target === 500 ? "◆" : "★"}</span>
-                  <strong>{target}</strong>
-                  <small>MEMBERSHIP MILESTONE</small>
-                  <p>{achieved ? "ACHIEVED" : projection ? `Estimated ${payoutLabel(projection.payoutDate)}` : "No estimate yet"}</p>
-                </div>;
-              })}
             </div>
           </article>;
         })}
