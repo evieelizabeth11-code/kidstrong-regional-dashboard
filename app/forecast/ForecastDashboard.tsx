@@ -20,9 +20,9 @@ const OCTOBER_HOLD_PATHS: Record<string, [number, number]> = {
 };
 const GROWTH_CHECKPOINTS: Record<string, number[]> = {
   Brick: [600, 650, 700],
-  "Mount Laurel": [450, 500],
-  Turnersville: [500, 550],
-  Voorhees: [450, 500],
+  "Mount Laurel": [450, 500, 550],
+  Turnersville: [500, 550, 600],
+  Voorhees: [450, 500, 550],
 };
 
 type TrialTotals = { scheduled: number; showed: number; closed: number };
@@ -235,6 +235,9 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
       </nav>}
       <section className="forecast-hero">
         <div><p className="kicker">{selectedCenter?.center.toUpperCase() ?? "LIVE"} GROWTH ROADMAP</p><h1>See what moves the <span>membership number.</span></h1><p>Start with the current forecast, then adjust show and close rates to see the direct impact on month-end APM.</p></div>
+        {centerId && <nav className="center-switcher" aria-label="Switch center and stay in Forecast">
+          {reports.map((report) => <Link className={report.id === centerId ? "active" : ""} href={`/centers/${report.id}/forecast`} key={report.id}>{report.center}</Link>)}
+        </nav>}
       </section>
 
       {!centerId && <section className="forecast-regional-strip" aria-label="Regional forecast summary">
