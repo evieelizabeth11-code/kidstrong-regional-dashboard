@@ -12,6 +12,7 @@ const STANDARD_MILESTONE_CENTERS = new Set(["Mount Laurel", "Turnersville", "Voo
 const FIRST_STANDARD_MILESTONE = 550;
 const MILESTONE_STEP = 50;
 const MAX_FORECAST_MONTHS = 60;
+const OCTOBER_CHALLENGE_DATE = new Date("2026-10-01T12:00:00");
 
 type TrialTotals = { scheduled: number; showed: number; closed: number };
 type MonthlyAttrition = { period: string; rate: number };
@@ -129,6 +130,14 @@ function forecastMilestone(center: ForecastCenter, target: number, closeRate = c
   return null;
 }
 
+function requiredMonthlySales(center: ForecastCenter, target: number, months: number) {
+  if (center.bomApm >= target || months <= 0) return 0;
+  const retention = 1 - center.attritionRate;
+  const retainedStartingApm = center.bomApm * Math.pow(retention, months);
+  const salesRetentionFactor = Array.from({ length: months }, (_, index) => Math.pow(retention, index)).reduce((sum, factor) => sum + factor, 0);
+  return Math.max(0, (target - retainedStartingApm) / salesRetentionFactor);
+}
+
 export default function ForecastDashboard({ centerId }: { centerId?: string }) {
   const [forecastInputs, setForecastInputs] = useState<ForecastInput[]>(initialForecasts);
   const [attritionHistory, setAttritionHistory] = useState<AttritionHistory>(SEEDED_ATTRITION_HISTORY);
@@ -241,6 +250,14 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
           const membersNeeded = nextMilestone ? nextMilestone - center.bomApm : 0;
           const nextForecast = nextMilestone ? forecastMilestone(center, nextMilestone) : null;
           const nextPayoutDate = new Date(center.dataThrough.getFullYear(), center.dataThrough.getMonth() + 1, 1);
+          const challengeTarget = center.center === "Brick" ? 550 : 500;
+          const challengeMonths = Math.max(1, (OCTOBER_CHALLENGE_DATE.getFullYear() - center.dataThrough.getFullYear()) * 12 + OCTOBER_CHALLENGE_DATE.getMonth() - center.dataThrough.getMonth());
+          const challengeMonthlySales = requiredMonthlySales(center, challengeTarget, challengeMonths);
+          const challengeWeeks = Math.max(1, (OCTOBER_CHALLENGE_DATE.getTime() - center.dataThrough.getTime()) / (7 * 24 * 60 * 60 * 1000));
+          const challengeWeeklySales = (challengeMonthlySales * challengeMonths) / challengeWeeks;
+          const challengeProgressStart = challengeTarget === 500 ? 400 : 500;
+          const challengeProgress = Math.max(0, Math.min(100, ((center.bomApm - challengeProgressStart) / (challengeTarget - challengeProgressStart)) * 100));
+          const monthlySalesGap = Math.max(0, challengeMonthlySales - center.projectedMonthlyTotalSales);
           const selectedCloseRate = scenarioRates[center.center] ?? center.closeRate;
           const scenarioForecast = nextMilestone ? forecastMilestone(center, nextMilestone, selectedCloseRate) : null;
           const scenarioTrialSigns = center.projectedMonthlyTrials * center.showRate * selectedCloseRate;
@@ -257,6 +274,20 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
               <div><small>{center.center.toUpperCase()}</small><strong>{center.bomApm} <em>APM</em></strong><span>{center.scheduled} trials scheduled through {center.dataThrough.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
               <div className="forecast-payout-apm"><small>PROJECTED {nextPayoutDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()} APM</small><strong>{Math.round(center.projectedNextPayoutApm)}</strong><span>at current operating rates</span></div>
             </div>
+
+            <section className="forecast-october-challenge" aria-label={`${center.center} October 1 challenge`}>
+              <div className="forecast-challenge-heading">
+                <div><small>THE MISSION</small><strong>Road to {challengeTarget}</strong><span>October 1 challenge</span></div>
+                <div><strong>{Math.max(0, challengeTarget - center.bomApm)}</strong><span>net members to go</span></div>
+              </div>
+              <div className="forecast-challenge-track"><span style={{ width: `${challengeProgress}%` }} /></div>
+              <div className="forecast-challenge-labels"><span>{center.bomApm} APM today</span><strong>{challengeTarget} APM by Oct 1</strong></div>
+              <div className="forecast-challenge-wins">
+                <div><small>WIN EACH WEEK</small><strong>{Math.ceil(challengeWeeklySales)} sales</strong><span>gross sign-ups needed</span></div>
+                <div><small>MONTHLY TARGET</small><strong>{Math.ceil(challengeMonthlySales)} sales</strong><span>includes attrition replacement</span></div>
+                <div className={monthlySalesGap <= .5 ? "on-challenge-pace" : "challenge-gap"}><small>CURRENT PACE</small><strong>{center.projectedMonthlyTotalSales.toFixed(0)} sales/mo</strong><span>{monthlySalesGap <= .5 ? "on pace for the challenge" : `${Math.ceil(monthlySalesGap)} more sales/month unlocks the goal`}</span></div>
+              </div>
+            </section>
 
             <div className="forecast-rate-strip" aria-label={`${center.center} forecast rates`}>
               <div><small>90-DAY SHOW RATE</small><strong>{(center.showRate * 100).toFixed(1)}%</strong><span>Looker rolling baseline</span></div>
