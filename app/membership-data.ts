@@ -2,6 +2,7 @@ export type CenterMembership = {
   center: string;
   totalMembers: number;
   bomApm: number;
+  activePaying?: number;
   holds: {
     total: number;
     scheduled: number | null;

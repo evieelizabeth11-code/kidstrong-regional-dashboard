@@ -114,6 +114,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             center: values[0],
             totalMembers: Number(values[1]),
             bomApm: Number(values[2]),
+            activePaying: Number(values[11]),
             holds: {
               total: Number(values[3]),
               scheduled: null,
@@ -186,7 +187,9 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const expectedSignups = membership ? membership.signups.goal * (elapsedDays / daysInMonth) : 0;
   const goalAchieved = membership ? membership.signups.current >= membership.signups.goal : false;
   const paceLabel = membership ? (goalAchieved ? "Goal crushed" : membership.signups.current >= expectedSignups - 1 ? "On pace" : "Behind pace") : "";
-  const currentActivePaying = membership ? membership.totalMembers - membership.holds.total - membership.pastDue : 0;
+  const currentActivePaying = membership
+    ? membership.activePaying ?? (membership.totalMembers - membership.holds.total - membership.pastDue)
+    : 0;
   const holdsStarting = membership?.holds.starting ?? 0;
   const holdsLifting = membership?.holds.lifting ?? 0;
   const projectedSignups = membership ? Math.round((membership.signups.current / elapsedDays) * daysInMonth) : 0;
@@ -264,7 +267,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           <section className="overview-business-kpis" aria-label="Membership and sales overview">
             <article className="members-kpi">
               <small>ACTIVE PAYING MEMBERS · APM</small>
-              <strong>{membership?.bomApm ?? "—"}</strong>
+              <strong>{membership ? currentActivePaying : "—"}</strong>
               <span>{membership ? `Membership Health · reported ${dataThroughDate}` : "Membership data unavailable"}</span>
             </article>
             <article className="sales-kpi">
@@ -316,7 +319,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
               <div><small>MEMBERSHIP</small><strong>{membership ? `${membership.signups.current} of ${membership.signups.goal} sign-ups` : "Data coming soon"}</strong><span>{membership ? `${signupGoalPct.toFixed(1)}% of monthly goal · ${paceLabel}` : "Membership health has not been added yet"}</span></div>{membership && <i><em style={{ width: `${Math.min(signupGoalPct, 100)}%` }} /></i>}<b>{membership ? "View membership details →" : "Awaiting data"}</b>
             </Link>
             <Link href={`/centers/${centerId}/forecast`} className="center-section-card forecast-card-link">
-              <div><small>FORECAST</small><strong>{membership ? `${membership.bomApm} APM today` : "Data coming soon"}</strong><span>Explore milestone dates at current, 50%, 60%, and 70% close rates</span></div><b>View membership forecast →</b>
+              <div><small>FORECAST</small><strong>{membership ? `${currentActivePaying} APM today` : "Data coming soon"}</strong><span>Explore milestone dates at current, 50%, 60%, and 70% close rates</span></div><b>View membership forecast →</b>
             </Link>
           </section>
 
