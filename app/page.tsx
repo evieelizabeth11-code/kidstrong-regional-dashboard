@@ -36,6 +36,7 @@ export default function Home() {
             center: values[0],
             totalMembers: Number(values[1]),
             bomApm: Number(values[2]),
+            activePaying: Number(values[11]),
             holds: { total: Number(values[3]), scheduled: null, starting: Number(values[4]), lifting: Number(values[5]) },
             drops: { total: Number(values[6]), pending: Number(values[7]) },
             signups: {

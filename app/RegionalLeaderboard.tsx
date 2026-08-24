@@ -14,6 +14,11 @@ export default function RegionalLeaderboard({
   reports?: CenterReport[];
 }) {
 
+  const apmStandings = useMemo(() => memberships
+    .map((item) => ({ center: item.center, value: item.activePaying ?? item.bomApm }))
+    .sort((a, b) => b.value - a.value), [memberships]);
+  const apmLeader = apmStandings[0]?.value ?? 0;
+
   const categories = useMemo(() => [
     {
       label: "SIGN-UPS",
@@ -43,6 +48,19 @@ export default function RegionalLeaderboard({
       <div><p className="kicker">REGIONAL LEADERBOARD</p><h2>Who&apos;s setting the pace?</h2></div>
       <span>Live standings · August 2026</span>
     </div>
+    <section className="apm-standings" aria-label="Active paying member leaderboard">
+      <div className="apm-standings-intro">
+        <div><small>APM STANDINGS</small><strong>Membership strength</strong><span>Live active paying members</span></div>
+        <div className="apm-champion"><i>♛</i><div><small>REGIONAL LEADER</small><strong>{apmStandings[0]?.center}</strong></div><b>{apmLeader.toLocaleString()} <em>APM</em></b></div>
+      </div>
+      <ol className="apm-ranking-list">
+        {apmStandings.map((row, index) => <li className={index === 0 ? "leader" : ""} key={row.center}>
+          <span className="apm-rank">{index + 1}</span>
+          <div><strong>{row.center}</strong><i><b style={{ width: `${apmLeader ? (row.value / apmLeader) * 100 : 0}%` }} /></i></div>
+          <b>{row.value.toLocaleString()} <small>APM</small></b>
+        </li>)}
+      </ol>
+    </section>
     <div className="leaderboard-grid">
       {categories.map((category) => <article className="leaderboard-card" key={category.label}>
         <div className="leaderboard-card-head"><div><small>{category.label}</small><span>{category.caption}</span></div><b>★</b></div>
