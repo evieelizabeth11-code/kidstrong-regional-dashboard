@@ -54,11 +54,13 @@ export default function RegionalLeaderboard({
         <div className="apm-champion"><i>♛</i><div><small>REGIONAL LEADER</small><strong>{apmStandings[0]?.center}</strong></div><b>{apmLeader.toLocaleString()} <em>APM</em></b></div>
       </div>
       <ol className="apm-ranking-list">
-        {apmStandings.map((row, index) => <li className={index === 0 ? "leader" : ""} key={row.center}>
+        {apmStandings.map((row, index) => {
+          const medal = ["gold", "silver", "bronze"][index];
+          return <li className={medal ? `medal-${medal}` : "fourth"} key={row.center}>
           <span className="apm-rank">{index + 1}</span>
-          <div><strong>{row.center}</strong><i><b style={{ width: `${apmLeader ? (row.value / apmLeader) * 100 : 0}%` }} /></i></div>
+          <div><strong>{row.center}{medal && <small>{medal.toUpperCase()}</small>}</strong><i><b style={{ width: `${apmLeader ? (row.value / apmLeader) * 100 : 0}%` }} /></i></div>
           <b>{row.value.toLocaleString()} <small>APM</small></b>
-        </li>)}
+        </li>})}
       </ol>
     </section>
     <div className="leaderboard-grid">

@@ -204,13 +204,23 @@ h1 { margin:0; font-size:clamp(34px,4vw,58px); line-height:1; letter-spacing:-.0
 .apm-champion>b em { color:#d6bd7a;font-size:7px;font-style:normal;letter-spacing:.08em; }
 .apm-ranking-list { display:grid;gap:7px;list-style:none;margin:0;padding:0; }
 .apm-ranking-list li { display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:12px;padding:10px 12px;border:1px solid rgba(255,255,255,.1);border-radius:9px;background:rgba(2,11,32,.48); }
-.apm-ranking-list li.leader { border-color:rgba(255,209,102,.42);background:linear-gradient(90deg,rgba(255,209,102,.12),rgba(2,11,32,.48)); }
+.apm-ranking-list li.medal-gold { border-color:rgba(255,209,102,.5);background:linear-gradient(90deg,rgba(255,209,102,.14),rgba(2,11,32,.48)); }
+.apm-ranking-list li.medal-silver { border-color:rgba(210,220,236,.38);background:linear-gradient(90deg,rgba(210,220,236,.1),rgba(2,11,32,.48)); }
+.apm-ranking-list li.medal-bronze { border-color:rgba(205,127,50,.42);background:linear-gradient(90deg,rgba(205,127,50,.11),rgba(2,11,32,.48)); }
 .apm-rank { display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#102d64;color:#9fb6df;font-size:9px;font-weight:950; }
-.apm-ranking-list li.leader .apm-rank { background:#ffd166;color:#071735; }
+.apm-ranking-list li.medal-gold .apm-rank { background:linear-gradient(145deg,#ffe598,#dca72f);color:#071735;box-shadow:0 0 14px rgba(255,209,102,.3); }
+.apm-ranking-list li.medal-silver .apm-rank { background:linear-gradient(145deg,#f3f7fc,#9cabc0);color:#071735;box-shadow:0 0 12px rgba(210,220,236,.22); }
+.apm-ranking-list li.medal-bronze .apm-rank { background:linear-gradient(145deg,#e0a064,#9f5d27);color:#fff;box-shadow:0 0 12px rgba(205,127,50,.2); }
 .apm-ranking-list li>div>strong { display:block;margin-bottom:7px;color:#dfe8f8;font-size:10px; }
+.apm-ranking-list li>div>strong small { margin-left:7px;font-size:6px;letter-spacing:.1em; }
+.apm-ranking-list li.medal-gold>div>strong small { color:#ffd166; }
+.apm-ranking-list li.medal-silver>div>strong small { color:#d2dcec; }
+.apm-ranking-list li.medal-bronze>div>strong small { color:#d9904c; }
 .apm-ranking-list li>div>i { display:block;height:5px;overflow:hidden;border-radius:99px;background:#020b20; }
 .apm-ranking-list li>div>i b { display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#1e63bd,#6de7ff);box-shadow:0 0 12px rgba(109,231,255,.4); }
-.apm-ranking-list li.leader>div>i b { background:linear-gradient(90deg,#d99f24,#ffd166);box-shadow:0 0 12px rgba(255,209,102,.36); }
+.apm-ranking-list li.medal-gold>div>i b { background:linear-gradient(90deg,#d99f24,#ffd166);box-shadow:0 0 12px rgba(255,209,102,.36); }
+.apm-ranking-list li.medal-silver>div>i b { background:linear-gradient(90deg,#8999ae,#e6edf7);box-shadow:0 0 10px rgba(210,220,236,.25); }
+.apm-ranking-list li.medal-bronze>div>i b { background:linear-gradient(90deg,#9f5d27,#d9904c);box-shadow:0 0 10px rgba(205,127,50,.22); }
 .apm-ranking-list li>b { color:white;font-size:17px;white-space:nowrap; }
 .apm-ranking-list li>b small { color:#7992be;font-size:6px;letter-spacing:.07em; }
 .leaderboard-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:12px; }
