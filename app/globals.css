@@ -260,9 +260,12 @@ h1 { margin:0; font-size:clamp(34px,4vw,58px); line-height:1; letter-spacing:-.0
 .membership-pace.progress-behind>i b { background:linear-gradient(90deg,#b91c1c,#ff5f5f); }
 .membership-pace.progress-close>i b { background:linear-gradient(90deg,#d08a00,#ffd166); }
 .membership-pace.progress-goal>i b { background:linear-gradient(90deg,#218c4a,#53d87a); }
-.membership-pace.progress-surpassed { border:1px solid rgba(109,231,255,.65);box-shadow:0 0 24px rgba(83,216,122,.12); }
-.membership-pace.progress-surpassed>i { overflow:visible;box-shadow:0 0 16px rgba(83,216,122,.55); }
-.membership-pace.progress-surpassed>i b { background:linear-gradient(90deg,#53d87a,#6de7ff,#53d87a);background-size:200% 100%;box-shadow:0 0 12px rgba(109,231,255,.65); }
+.membership-pace.progress-goal,.membership-pace.progress-surpassed { border:1px solid rgba(109,231,255,.72);box-shadow:0 0 28px rgba(83,216,122,.24),0 0 52px rgba(109,231,255,.1); }
+.membership-pace.progress-goal>i,.membership-pace.progress-surpassed>i { overflow:visible;box-shadow:0 0 18px rgba(83,216,122,.75),0 0 30px rgba(109,231,255,.28);animation:goal-crushed-glow 1.8s ease-in-out infinite alternate; }
+.membership-pace.progress-goal>i b,.membership-pace.progress-surpassed>i b { background:linear-gradient(90deg,#53d87a,#6de7ff,#53d87a);background-size:200% 100%;box-shadow:0 0 15px rgba(109,231,255,.85);animation:goal-crushed-shimmer 2.4s linear infinite; }
+@keyframes goal-crushed-glow { from { box-shadow:0 0 12px rgba(83,216,122,.5),0 0 20px rgba(109,231,255,.16); } to { box-shadow:0 0 24px rgba(83,216,122,.92),0 0 38px rgba(109,231,255,.42); } }
+@keyframes goal-crushed-shimmer { to { background-position:200% 0; } }
+@media(prefers-reduced-motion:reduce){.membership-pace.progress-goal>i,.membership-pace.progress-surpassed>i,.membership-pace.progress-goal>i b,.membership-pace.progress-surpassed>i b{animation:none}}
 .membership-pace.progress-behind>div:first-child strong { color:#ff6b6b; }
 .membership-pace.progress-close>div:first-child strong { color:#ffd166; }
 .membership-pace.progress-goal>div:first-child strong,.membership-pace.progress-surpassed>div:first-child strong { color:#53d87a; }
