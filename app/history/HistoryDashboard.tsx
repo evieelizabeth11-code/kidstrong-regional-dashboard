@@ -23,7 +23,7 @@ type HistoryRow = {
 };
 
 const HISTORY_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000008&single=true&output=csv";
-const DASHBOARD_FEED_URL = "/api/dashboard-feed";
+const DASHBOARD_FEED_URL = "/api/live-data";
 const HISTORY_FALLBACK: HistoryRow[] = [
   { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Brick", totalMembers: 608, bomApm: 537, activePaying: 536, drops: 27, signups: 31, signupGoal: 60, scheduled: 161, attended: 98, closed: 33, callMinutes: 3362.73 },
   { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Mount Laurel", totalMembers: 480, bomApm: 402, activePaying: 402, drops: 27, signups: 46, signupGoal: 36, scheduled: 130, attended: 82, closed: 41, callMinutes: 3157.34 },

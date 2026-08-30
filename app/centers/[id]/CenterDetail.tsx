@@ -26,7 +26,7 @@ const progressTone = (value: number) =>
   value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
 const CALL_PUSH_GOALS = [3500, 4000];
-const MEMBERSHIP_FEED_URL = "/api/dashboard-feed";
+const MEMBERSHIP_FEED_URL = "/api/live-data";
 type Section = "overview" | "trials" | "calls" | "membership" | "forecast";
 
 export default function CenterDetail({ centerId, section }: { centerId: string; section: Section }) {

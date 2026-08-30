@@ -6,7 +6,7 @@ import { membershipData, type CenterMembership } from "../membership-data";
 import ReportingPeriodNav from "../ReportingPeriodNav";
 import { reports } from "../trial-data";
 
-const DASHBOARD_FEED_URL = "/api/dashboard-feed";
+const DASHBOARD_FEED_URL = "/api/live-data";
 const STANDARD_MILESTONE_CENTERS = new Set(["Mount Laurel", "Turnersville", "Voorhees"]);
 const FIRST_STANDARD_MILESTONE = 550;
 const MILESTONE_STEP = 50;

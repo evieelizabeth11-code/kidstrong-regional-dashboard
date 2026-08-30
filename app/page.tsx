@@ -15,7 +15,7 @@ const progressTone = (value: number) =>
   value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
 const MONTHLY_CALL_MINUTE_GOAL = 3000;
 const CALL_PUSH_GOALS = [3500, 4000];
-const DASHBOARD_FEED_URL = "/api/dashboard-feed";
+const DASHBOARD_FEED_URL = "/api/live-data";
 
 export default function Home() {
   const [liveCallData, setLiveCallData] = useState(callData);
