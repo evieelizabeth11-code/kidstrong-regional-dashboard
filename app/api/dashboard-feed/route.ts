@@ -5,8 +5,31 @@ export const dynamic = "force-dynamic";
 const PUBLISHED_FEED_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
 
-const newestReportDate = (csv: string) =>
-  csv.match(/20\d{2}-\d{2}-\d{2}/g)?.sort().at(-1) ?? "";
+const REPORT_DATE_COLUMN = 12;
+
+const readCell = (value = "") => value.replace(/^"|"$/g, "").trim();
+
+const mergeNewestCenterRows = (feeds: string[]) => {
+  const parsedFeeds = feeds.map((csv) => csv.trim().split(/\r?\n/).filter(Boolean));
+  const header = parsedFeeds.find((rows) => rows.length)?.[0] ?? "";
+  const newestByCenter = new Map<string, { reportDate: string; row: string }>();
+
+  parsedFeeds.forEach((rows) => {
+    rows.slice(1).forEach((row) => {
+      const values = row.split(",");
+      const center = readCell(values[0]);
+      const reportDate = readCell(values[REPORT_DATE_COLUMN]);
+      if (!center || !/^20\d{2}-\d{2}-\d{2}$/.test(reportDate)) return;
+
+      const current = newestByCenter.get(center);
+      if (!current || reportDate >= current.reportDate) {
+        newestByCenter.set(center, { reportDate, row });
+      }
+    });
+  });
+
+  return [header, ...Array.from(newestByCenter.values()).map(({ row }) => row)].join("\n");
+};
 
 const fetchPublishedFeed = async () => {
   const upstream = await fetch(`${PUBLISHED_FEED_URL}&t=${Date.now()}-${Math.random()}`, {
@@ -19,11 +42,16 @@ const fetchPublishedFeed = async () => {
 
 export async function GET() {
   try {
-    // Google can briefly serve different published-sheet generations to
-    // concurrent requests. Compare two fresh copies and return the newest
-    // report date so the regional homepage cannot get stuck on yesterday.
-    const feeds = await Promise.all([fetchPublishedFeed(), fetchPublishedFeed()]);
-    const latestFeed = feeds.sort((a, b) => newestReportDate(b).localeCompare(newestReportDate(a)))[0];
+    // Google can briefly serve a mixed published-sheet generation where only
+    // some center rows have refreshed. Sample several copies and keep the
+    // newest report-date row independently for each center.
+    const feeds = await Promise.all([
+      fetchPublishedFeed(),
+      fetchPublishedFeed(),
+      fetchPublishedFeed(),
+      fetchPublishedFeed(),
+    ]);
+    const latestFeed = mergeNewestCenterRows(feeds);
 
     return new NextResponse(latestFeed, {
       headers: {
