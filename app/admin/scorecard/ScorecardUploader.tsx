@@ -39,6 +39,18 @@ type Reconciliation = {
   checks: { health: boolean; calls: boolean; trials: boolean; scorecard: boolean };
 };
 
+type CloseoutPreview = {
+  reportDate: string; dataThrough: string; period: string; canFinalize: boolean;
+  centers: { center: string; apm: number; signups: number; scheduled: number; attended: number; closed: number; callMinutes: number; drops: number }[];
+};
+
+const septemberGoals = [
+  { center: "Brick", callGoal: 2800, signupGoal: 42, trialGoal: 155, showTarget: 68, closeTarget: 55, closeStandard: 70, dropLimit: 28, weeklyPace: 10, projectedApm: 601, startingApm: 563, returningHolds: 27, newHolds: 1, pendingDrops: 30 },
+  { center: "Mount Laurel", callGoal: 3100, signupGoal: 42, trialGoal: 110, showTarget: 67, closeTarget: 63, closeStandard: 70, dropLimit: 33, weeklyPace: 10, projectedApm: 454, startingApm: 435, returningHolds: 31, newHolds: 2, pendingDrops: 52 },
+  { center: "Turnersville", callGoal: 2600, signupGoal: 38, trialGoal: 120, showTarget: 62, closeTarget: 60, closeStandard: 70, dropLimit: 26, weeklyPace: 9, projectedApm: 466, startingApm: 432, returningHolds: 21, newHolds: 0, pendingDrops: 25 },
+  { center: "Voorhees", callGoal: 2700, signupGoal: 35, trialGoal: 120, showTarget: 70, closeTarget: 50, closeStandard: 70, dropLimit: 29, weeklyPace: 8, projectedApm: 436, startingApm: 389, returningHolds: 43, newHolds: 2, pendingDrops: 29 },
+];
+
 const today = () => {
   const date = new Date();
   const offset = date.getTimezoneOffset();
@@ -57,6 +69,10 @@ export default function ScorecardUploader() {
   const [reconciling, setReconciling] = useState(false);
   const [reconciliation, setReconciliation] = useState<Reconciliation | null>(null);
   const [reconcileMessage, setReconcileMessage] = useState("");
+  const [closeout, setCloseout] = useState<CloseoutPreview | null>(null);
+  const [closeoutBusy, setCloseoutBusy] = useState(false);
+  const [closeoutMessage, setCloseoutMessage] = useState("");
+  const [closeoutComplete, setCloseoutComplete] = useState(false);
 
   useEffect(() => {
     fetch("/api/scorecard", { cache: "no-store" })
@@ -121,6 +137,26 @@ export default function ScorecardUploader() {
     } finally { setReconciling(false); }
   };
 
+  const runCloseout = async (action: "preview" | "finalize") => {
+    if (!password) return setCloseoutMessage("Enter the admin password above first.");
+    setCloseoutBusy(true); setCloseoutMessage("");
+    const form = new FormData();
+    form.set("password", password); form.set("action", action); form.set("goals", JSON.stringify(septemberGoals));
+    try {
+      const response = await fetch("/api/month-closeout", { method: "POST", body: form, cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.error || "Month closeout could not be completed.");
+      if (action === "preview") {
+        setCloseout(result);
+        setCloseoutMessage(result.canFinalize ? "Final month data is ready to archive." : `Preview ready through ${result.dataThrough}. Finalize unlocks on the first report date of the new month.`);
+      } else {
+        setCloseoutComplete(true);
+        setCloseoutMessage(`${result.periodLabel || "The month"} is frozen in history and ${result.nextPeriodLabel || "the new month"} is open.`);
+      }
+    } catch (error) { setCloseoutMessage(error instanceof Error ? error.message : "Month closeout could not be completed."); }
+    finally { setCloseoutBusy(false); }
+  };
+
   return <section className="scorecard-workflow">
     {ready === false && <div className="setup-banner"><strong>ONE-TIME CONNECTION NEEDED</strong><span>The upload page is built, but its private Google connection still needs to be activated.</span></div>}
     <div className="workflow-steps" aria-label="Upload steps">
@@ -178,6 +214,18 @@ export default function ScorecardUploader() {
       </button>
       {reconcileMessage && <p className={`admin-message ${reconciliation ? "success" : ""}`} role="status">{reconcileMessage}</p>}
       {reconciliation && <div className="reconcile-confirmation"><strong>{reconciliation.centersChecked} centers confirmed</strong><span>Report date {reconciliation.reportDate} · Checked {new Date(reconciliation.checkedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span><a href={`/?refresh=${Date.now()}`}>Open refreshed dashboard →</a></div>}
+    </div>
+
+    <div className="closeout-card">
+      <div className="reconcile-heading"><div><small>MONTH-END CONTROL</small><h2>Preview. Finalize. Open the new month.</h2><p>This freezes the completed month in history, loads the approved September goals, and leaves every source row intact.</p></div><span>{closeoutComplete ? "COMPLETE ✓" : "PIN PROTECTED"}</span></div>
+      {!closeout && <button className="primary-admin-button closeout-preview-button" disabled={closeoutBusy} onClick={() => runCloseout("preview")}>{closeoutBusy ? "Checking month-end data…" : "Preview month closeout →"}</button>}
+      {closeout && <>
+        <div className="closeout-summary-head"><div><small>ARCHIVE PERIOD</small><strong>{closeout.period}</strong></div><div><small>DATA THROUGH</small><strong>{closeout.dataThrough}</strong></div><div><small>NEXT PLAN</small><strong>September 2026</strong></div></div>
+        <div className="closeout-center-grid">{closeout.centers.map((center) => <article key={center.center}><strong>{center.center}</strong><span>APM <b>{center.apm}</b></span><span>Sign-ups <b>{center.signups}</b></span><span>Trials <b>{center.scheduled} / {center.attended} / {center.closed}</b></span><span>Calls <b>{center.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</b></span></article>)}</div>
+        <div className="closeout-goals"><small>SEPTEMBER PLAN READY</small>{septemberGoals.map((goal) => <span key={goal.center}><b>{goal.center}</b> {goal.signupGoal} signs · {goal.trialGoal} trials · {goal.showTarget}% show · {goal.closeTarget}% close · {goal.callGoal.toLocaleString()} call min</span>)}</div>
+        <button className="primary-admin-button closeout-finalize-button" disabled={closeoutBusy || !closeout.canFinalize || closeoutComplete} onClick={() => runCloseout("finalize")}>{closeoutComplete ? "Month finalized ✓" : closeout.canFinalize ? "Finalize month & open September →" : "Final closeout unlocks September 1"}</button>
+      </>}
+      {closeoutMessage && <p className={`admin-message ${closeoutComplete ? "success" : ""}`} role="status">{closeoutMessage}</p>}
     </div>
   </section>;
 }

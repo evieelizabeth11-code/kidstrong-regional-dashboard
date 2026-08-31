@@ -85,13 +85,16 @@ export default function Home() {
     day: "numeric",
     year: "numeric",
   });
+  const reportingPeriodLabel = latestReportDate
+    ? new Date(`${latestReportDate}T12:00:00`).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : "August 2026";
 
   return (
     <main className="overview-page">
       <header className="navy-header brandless-header">
         <div className="header-title">
           <span>REGIONAL PERFORMANCE COMMAND CENTER</span>
-          <strong>AUGUST 2026</strong>
+          <strong>{reportingPeriodLabel.toUpperCase()}</strong>
         </div>
         <ReportingPeriodNav />
       </header>
@@ -113,7 +116,7 @@ export default function Home() {
           <article><small>CALL TIME</small><div className="regional-value-pair"><strong>{totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><em>{pct(totalMinutes, 12000).toFixed(1)}%</em></div><span>of 12,000 regional minutes</span></article>
         </section>
 
-        <RegionalLeaderboard memberships={liveMembershipData} reports={liveReports} />
+        <RegionalLeaderboard memberships={liveMembershipData} reports={liveReports} reportingPeriod={reportingPeriodLabel} />
 
         <section className="overview-section-head">
           <div><p className="kicker">CENTER SCORECARDS</p><h2>Select a center to explore</h2></div>
@@ -131,7 +134,7 @@ export default function Home() {
             return (
               <Link className="overview-center-card" href={`/centers/${report.id}`} key={report.id}>
                 <div className="overview-card-top">
-                  <div><small>AUGUST 2026</small><h2>{report.center}</h2></div>
+                  <div><small>{reportingPeriodLabel.toUpperCase()}</small><h2>{report.center}</h2></div>
                   <span>OPEN CENTER <b>→</b></span>
                 </div>
                 <div className="overview-card-metrics">
@@ -150,7 +153,7 @@ export default function Home() {
           })}
         </section>
 
-        <footer>Official center trial totals: Daily Scorecard · Coaching detail: Trial Tracker <span>August reporting through EOD {dataThroughLabel}</span></footer>
+        <footer>Official center trial totals: Daily Scorecard · Coaching detail: Trial Tracker <span>{reportingPeriodLabel} reporting through EOD {dataThroughLabel}</span></footer>
       </div>
     </main>
   );

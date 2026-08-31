@@ -151,7 +151,7 @@ export default function HistoryDashboard() {
 
       <section className="history-status">
         <div><small>{status === "FINAL" ? "FINALIZED MONTH" : "MONTH IN PROGRESS"}</small><strong>{periodLabel(selectedPeriod)}</strong><span>Data through {dataThrough}</span></div>
-        <p>{status === "FINAL" ? "This month is frozen and preserved." : "August remains editable as the active reporting month. July is frozen and preserved."}</p>
+        <p>{status === "FINAL" ? "This month is frozen and preserved." : `${periodLabel(selectedPeriod)} remains editable as the active reporting month. Finalized months stay frozen and preserved.`}</p>
       </section>
 
       <section className="history-totals">
@@ -194,7 +194,7 @@ export default function HistoryDashboard() {
       </section>
 
       <section className="history-coming">
-        <div><span>↗</span><div><small>AUGUST TRACKING IS LIVE</small><strong>The first August snapshot is now retained</strong><p>August is being saved as an in-progress month through EOD August 1. July remains frozen, and the completed August month will support the first full month-over-month comparison.</p></div></div>
+        <div><span>↗</span><div><small>{periodLabel(selectedPeriod).toUpperCase()} HISTORY</small><strong>{status === "FINAL" ? "This month is finalized and retained" : "Live tracking is being retained"}</strong><p>{status === "FINAL" ? "These results are frozen for future comparison." : "The month remains in progress until the guided month-end closeout is approved."}</p></div></div>
       </section>
     </div>
   </main>;

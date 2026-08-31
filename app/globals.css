@@ -626,6 +626,20 @@ footer { font-size:11px; }
 .reconcile-confirmation strong { color:var(--green);font-size:12px; }
 .reconcile-confirmation span { color:#afbdd9;font-size:10px; }
 .reconcile-confirmation a { color:#6de7ff;font-size:11px;font-weight:900; }
+.closeout-card { padding:26px;border:1px solid rgba(255,209,102,.42);border-radius:16px;background:linear-gradient(145deg,#10295b,#071735);box-shadow:var(--surface-shadow); }
+.closeout-card .reconcile-heading>span { color:#ffd166;background:rgba(255,209,102,.1); }
+.closeout-preview-button { margin-top:20px;background:linear-gradient(90deg,#ffd166,#ff9f43); }
+.closeout-summary-head { display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px; }
+.closeout-summary-head div { padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:#041535; }
+.closeout-summary-head small,.closeout-goals>small { display:block;color:#91a4ca;font-size:9px;font-weight:900;letter-spacing:.08em; }
+.closeout-summary-head strong { display:block;margin-top:5px;font-size:17px; }
+.closeout-center-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:10px; }
+.closeout-center-grid article { display:grid;gap:6px;padding:14px;border:1px solid rgba(83,216,122,.22);border-radius:10px;background:rgba(4,21,53,.82); }
+.closeout-center-grid article>strong { color:var(--green);font-size:13px; }
+.closeout-center-grid span { color:#aebddd;font-size:10px; }.closeout-center-grid b { color:white; }
+.closeout-goals { display:grid;gap:7px;margin-top:12px;padding:15px;border-radius:10px;background:rgba(109,231,255,.06); }
+.closeout-goals span { color:#b9c9e7;font-size:10px; }.closeout-goals b { color:#6de7ff;display:inline-block;min-width:92px; }
+.closeout-finalize-button { margin-top:12px;background:linear-gradient(90deg,var(--green),#6de7ff); }
 @media(max-width:760px){
   .admin-header { grid-template-columns:1fr;gap:14px;text-align:center; }
   .workflow-steps,.upload-fields { grid-template-columns:1fr; }
@@ -893,6 +907,7 @@ footer { font-size:11px; }
   .reconcile-heading { flex-direction:column; }
   .reconcile-checks { grid-template-columns:1fr 1fr; }
   .reconcile-confirmation { grid-template-columns:1fr; }
+  .closeout-summary-head,.closeout-center-grid { grid-template-columns:1fr 1fr; }
 }
 
 /* Membership growth forecast */

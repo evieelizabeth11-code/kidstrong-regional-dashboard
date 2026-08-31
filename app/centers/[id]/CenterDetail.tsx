@@ -219,6 +219,9 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         year: "numeric",
       })
     : "Aug 2, 2026";
+  const reportingPeriodLabel = membership?.reportDate
+    ? new Date(`${membership.reportDate}T12:00:00`).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : "August 2026";
   const dataThroughLabel = dataThrough.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   const footerDataThroughLabel = dataThrough.toLocaleDateString("en-US", {
     month: "long",
@@ -259,7 +262,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         </nav>
 
         <section className="detail-hero">
-          <div><p className="kicker">AUGUST 2026 · {sectionTitle}</p><h1>{selected.center}</h1><p>{selected.dateRange}</p></div>
+          <div><p className="kicker">{reportingPeriodLabel.toUpperCase()} · {sectionTitle}</p><h1>{selected.center}</h1><p>{selected.dateRange}</p></div>
           <div className="center-switcher">{liveReports.map((report) => <Link className={report.id === centerId ? "active" : ""} href={`/centers/${report.id}${section === "overview" ? "" : `/${section}`}`} key={report.id}>{report.center}</Link>)}</div>
         </section>
 

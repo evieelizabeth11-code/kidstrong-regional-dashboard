@@ -9,9 +9,11 @@ const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0)
 export default function RegionalLeaderboard({
   memberships = membershipData,
   reports = fallbackReports,
+  reportingPeriod = "August 2026",
 }: {
   memberships?: CenterMembership[];
   reports?: CenterReport[];
+  reportingPeriod?: string;
 }) {
 
   const apmStandings = useMemo(() => memberships
@@ -46,7 +48,7 @@ export default function RegionalLeaderboard({
   return <section className="regional-leaderboard">
     <div className="leaderboard-heading">
       <div><p className="kicker">REGIONAL LEADERBOARD</p><h2>Who&apos;s setting the pace?</h2></div>
-      <span>Live standings · August 2026</span>
+      <span>Live standings · {reportingPeriod}</span>
     </div>
     <section className="apm-standings" aria-label="Active paying member leaderboard">
       <div className="apm-standings-intro">

@@ -116,6 +116,7 @@ function doPost(event) {
 
     if (payload.action === 'parse') return parseScorecardPdf_(payload);
     if (payload.action === 'approve') return approveScorecardRows_(payload);
+    if (payload.action === 'month-closeout') return finalizeMonth_(payload);
     return jsonResponse_({ ok: false, error: 'Unknown scorecard action.' });
   } catch (error) {
     return jsonResponse_({ ok: false, error: error && error.message ? error.message : String(error) });
@@ -228,9 +229,12 @@ function approveScorecardRows_(payload) {
   const sheet = spreadsheet.getSheetByName('Daily Scorecard Import');
   if (!sheet) return jsonResponse_({ ok: false, error: 'Daily Scorecard Import is missing.' });
 
-  const reportDate = new Date(payload.reportDate + 'T12:00:00');
-  if (isNaN(reportDate.getTime())) return jsonResponse_({ ok: false, error: 'Invalid report date.' });
   const timezone = spreadsheet.getSpreadsheetTimeZone();
+  // Store a date-only value at midnight. A hidden noon timestamp makes
+  // otherwise identical dates fail exact-match formulas in Membership Health
+  // and Dashboard Feed.
+  const reportDate = Utilities.parseDate(payload.reportDate, timezone, 'yyyy-MM-dd');
+  if (isNaN(reportDate.getTime())) return jsonResponse_({ ok: false, error: 'Invalid report date.' });
   const reportKey = Utilities.formatDate(reportDate, timezone, 'yyyy-MM-dd');
   const lastRow = Math.max(sheet.getLastRow(), 4);
   const existing = lastRow > 4 ? sheet.getRange(5, 1, lastRow - 4, 2).getValues() : [];
@@ -292,6 +296,59 @@ function approveScorecardRows_(payload) {
 function getOrCreateFolder_(name) {
   const folders = DriveApp.getFoldersByName(name);
   return folders.hasNext() ? folders.next() : DriveApp.createFolder(name);
+}
+
+function finalizeMonth_(payload) {
+  if (!payload.reportDate || !Array.isArray(payload.goals) || payload.goals.length !== 4) {
+    return jsonResponse_({ ok: false, error: 'The report date and four center plans are required.' });
+  }
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const timezone = spreadsheet.getSpreadsheetTimeZone();
+  const reportDate = Utilities.parseDate(payload.reportDate, timezone, 'yyyy-MM-dd');
+  if (isNaN(reportDate.getTime()) || reportDate.getDate() !== 1) {
+    return jsonResponse_({ ok: false, error: 'Final closeout is only available on the first report date of the new month.' });
+  }
+  const dataThrough = new Date(reportDate); dataThrough.setDate(dataThrough.getDate() - 1);
+  const period = Utilities.formatDate(dataThrough, timezone, 'yyyy-MM');
+  const nextPeriod = Utilities.formatDate(reportDate, timezone, 'MMMM yyyy');
+  const feed = spreadsheet.getSheetByName('Dashboard Feed');
+  const archive = spreadsheet.getSheetByName('Historical Archive');
+  const goalsSheet = spreadsheet.getSheetByName('Centers & Goals');
+  if (!feed || !archive || !goalsSheet) return jsonResponse_({ ok: false, error: 'A required dashboard tab is missing.' });
+
+  const feedRows = feed.getRange(2, 1, 4, 38).getValues();
+  const expected = ['Brick', 'Mount Laurel', 'Turnersville', 'Voorhees'];
+  if (feedRows.some(function(row, index) { return row[0] !== expected[index]; })) {
+    return jsonResponse_({ ok: false, error: 'Dashboard Feed must contain the four centers in the expected order.' });
+  }
+  const reportKey = Utilities.formatDate(reportDate, timezone, 'yyyy-MM-dd');
+  if (feedRows.some(function(row) {
+    return !(row[12] instanceof Date) || Utilities.formatDate(row[12], timezone, 'yyyy-MM-dd') !== reportKey;
+  })) return jsonResponse_({ ok: false, error: 'The four centers do not share the approved report date.' });
+
+  const lastArchiveRow = archive.getLastRow();
+  const existing = lastArchiveRow > 1 ? archive.getRange(2, 3, lastArchiveRow - 1, 3).getValues() : [];
+  if (existing.some(function(row) { return row[0] === period && row[1] === 'FINAL'; })) {
+    return jsonResponse_({ ok: false, error: period + ' is already finalized. No duplicate archive was created.' });
+  }
+  const archiveRows = feedRows.map(function(row) {
+    return [reportDate, dataThrough, period, 'FINAL', row[0], row[1], row[2], row[11], row[3], row[4], row[5], row[10], row[6], row[7], row[8], row[13], row[14], row[9], row[28], row[29], row[30], row[31], row[32], row[33], row[21], row[15], row[17], row[25], row[23], row[24], row[26], 'Final ' + period + ' snapshot; reconciliation approved and month archived.'];
+  });
+  archive.getRange(lastArchiveRow + 1, 1, 4, 32).setValues(archiveRows);
+  archive.getRange(lastArchiveRow + 1, 1, 4, 2).setNumberFormat('yyyy-mm-dd');
+
+  const headers = [['Monthly Call Goal (min)', 'Monthly Signup Goal', 'Trial Schedule Goal', 'Show Rate Target', 'Close Rate Target', 'Close Rate Standard', 'Completed Drop Limit', 'Weekly Signup Pace', 'Projected EOM APM', 'Starting APM', 'Returning Holds', 'New Holds', 'Pending Drops']];
+  goalsSheet.getRange(4, 3, 1, 13).setValues(headers).setFontWeight('bold').setBackground('#0b2a66').setFontColor('#ffffff');
+  const goalRows = expected.map(function(center) {
+    const goal = payload.goals.find(function(item) { return item.center === center; });
+    if (!goal) throw new Error('Missing new-month plan for ' + center + '.');
+    return [goal.callGoal, goal.signupGoal, goal.trialGoal, goal.showTarget / 100, goal.closeTarget / 100, goal.closeStandard / 100, goal.dropLimit, goal.weeklyPace, goal.projectedApm, goal.startingApm, goal.returningHolds, goal.newHolds, goal.pendingDrops];
+  });
+  goalsSheet.getRange(5, 3, 4, 13).setValues(goalRows);
+  goalsSheet.getRange(5, 6, 4, 3).setNumberFormat('0%');
+  goalsSheet.autoResizeColumns(3, 13);
+  SpreadsheetApp.flush();
+  return jsonResponse_({ ok: true, period: period, periodLabel: Utilities.formatDate(dataThrough, timezone, 'MMMM yyyy'), nextPeriodLabel: nextPeriod, centersArchived: 4, goalsUpdated: 4 });
 }
 
 function jsonResponse_(payload) {
