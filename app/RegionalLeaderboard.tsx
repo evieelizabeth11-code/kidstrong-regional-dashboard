@@ -6,6 +6,14 @@ import { reports as fallbackReports, type CenterReport } from "./trial-data";
 
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
 
+const membershipStrength = (item: CenterMembership) => {
+  // The first report date of a new month still reflects the prior day's
+  // completed activity. Use the approved new-month baseline so the APM
+  // standings reset with the reporting period; subsequent days use live APM.
+  const reportDay = item.reportDate ? new Date(`${item.reportDate}T12:00:00`).getDate() : null;
+  return reportDay === 1 ? item.bomApm : (item.activePaying ?? item.bomApm);
+};
+
 export default function RegionalLeaderboard({
   memberships = membershipData,
   reports = fallbackReports,
@@ -17,7 +25,7 @@ export default function RegionalLeaderboard({
 }) {
 
   const apmStandings = useMemo(() => memberships
-    .map((item) => ({ center: item.center, value: item.activePaying ?? item.bomApm }))
+    .map((item) => ({ center: item.center, value: membershipStrength(item) }))
     .sort((a, b) => b.value - a.value), [memberships]);
   const apmLeader = apmStandings[0]?.value ?? 0;
 
