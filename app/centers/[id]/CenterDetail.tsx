@@ -114,7 +114,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             center: values[0],
             totalMembers: Number(values[1]),
             bomApm: Number(values[2]),
-            activePaying: Number(values[11]),
+            activePaying: values[11] ? Number(values[11]) : undefined,
             holds: {
               total: Number(values[3]),
               scheduled: null,

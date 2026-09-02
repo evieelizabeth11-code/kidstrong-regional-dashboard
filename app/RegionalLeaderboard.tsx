@@ -11,7 +11,9 @@ const membershipStrength = (item: CenterMembership) => {
   // completed activity. Use the approved new-month baseline so the APM
   // standings reset with the reporting period; subsequent days use live APM.
   const reportDay = item.reportDate ? new Date(`${item.reportDate}T12:00:00`).getDate() : null;
-  return reportDay === 1 ? item.bomApm : (item.activePaying ?? item.bomApm);
+  return reportDay === 1 || !item.activePaying || item.activePaying <= 0
+    ? item.bomApm
+    : item.activePaying;
 };
 
 export default function RegionalLeaderboard({
