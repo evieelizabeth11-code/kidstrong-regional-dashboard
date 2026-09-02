@@ -7,13 +7,16 @@ import { reports as fallbackReports, type CenterReport } from "./trial-data";
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
 
 const membershipStrength = (item: CenterMembership) => {
+  const calculatedActivePaying = item.totalMembers - item.holds.total - item.pastDue;
   // The first report date of a new month still reflects the prior day's
   // completed activity. Use the approved new-month baseline so the APM
-  // standings reset with the reporting period; subsequent days use live APM.
+  // standings reset with the reporting period. After that, use the direct
+  // APM value when present or the same Total Members - Holds - Past Due
+  // calculation used on each center page.
   const reportDay = item.reportDate ? new Date(`${item.reportDate}T12:00:00`).getDate() : null;
-  return reportDay === 1 || !item.activePaying || item.activePaying <= 0
-    ? item.bomApm
-    : item.activePaying;
+  if (reportDay === 1) return item.bomApm;
+  if (item.activePaying && item.activePaying > 0) return item.activePaying;
+  return calculatedActivePaying > 0 ? calculatedActivePaying : item.bomApm;
 };
 
 export default function RegionalLeaderboard({
