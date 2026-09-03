@@ -160,7 +160,7 @@ export default function HistoryDashboard() {
         <article className={pct(totals.closed, totals.attended) >= RATE_GOAL ? "goal-hit" : ""}><small>CLOSE RATE</small><strong>{pct(totals.closed, totals.attended).toFixed(1)}%</strong><span>{totals.closed} of {totals.attended} · goal {RATE_GOAL}%</span></article>
         <article className={totals.callMinutes >= regionalCallGoal ? "goal-hit" : ""}><small>TALK TIME</small><strong>{totals.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><span>{totals.callMinutes >= regionalCallGoal ? `★ ${regionalCallGoal.toLocaleString()}-minute goal hit` : `${(regionalCallGoal - totals.callMinutes).toLocaleString(undefined, { maximumFractionDigits: 0 })} to goal`}</span></article>
         <article><small>ATTRITION</small><strong>{pct(totals.drops, totals.bomApm).toFixed(1)}%</strong><span>{totals.drops} drops ÷ {totals.bomApm.toLocaleString()} BOM APM</span></article>
-        <article><small>APM</small><strong>{totals.bomApm.toLocaleString()}</strong><span>active paying members across four centers</span></article>
+        <article><small>APM</small><strong>{totals.activePaying.toLocaleString()}</strong><span>month-end active paying members across four centers</span></article>
       </section>
 
       <div className="overview-section-head"><div><p className="kicker">CENTER HISTORY</p><h2>{periodLabel(selectedPeriod)} snapshot</h2></div><span>Select a center card for its complete breakdown</span></div>
@@ -169,7 +169,12 @@ export default function HistoryDashboard() {
           const isExpanded = expandedCenter === row.center;
           const showRate = pct(row.attended, row.scheduled);
           const closeRate = pct(row.closed, row.attended);
-          const personRates = (selectedPeriod === "2026-07" ? teamTrialData : currentTeamTrials)
+          const isFinalized = row.status === "FINAL";
+          const personRates = (selectedPeriod === "2026-07"
+            ? teamTrialData
+            : isFinalized
+              ? []
+              : currentTeamTrials)
             .filter((person) => person.center === row.center);
           return <article className={`history-center-card ${isExpanded ? "expanded" : ""}`} key={row.center}>
             <button type="button" onClick={() => setExpandedCenter(isExpanded ? null : row.center)} aria-expanded={isExpanded}>
@@ -180,14 +185,14 @@ export default function HistoryDashboard() {
                 <div className={closeRate >= RATE_GOAL ? "goal-hit" : ""}><dt>CLOSE</dt><dd>{closeRate.toFixed(1)}%</dd></div>
                 <div className={row.callMinutes >= CALL_MINUTE_GOAL ? "goal-hit" : ""}><dt>CALL MIN.</dt><dd>{row.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</dd></div>
                 <div><dt>ATTRITION</dt><dd>{pct(row.drops, row.bomApm).toFixed(1)}%</dd></div>
-                <div><dt>APM</dt><dd>{row.bomApm}</dd></div>
+                <div><dt>APM</dt><dd>{row.activePaying}</dd></div>
               </dl>
             </button>
             {isExpanded && <div className="history-center-breakdown">
               <section><small>TRIAL PERFORMANCE</small><div><span>Scheduled <b>{row.scheduled}</b></span><span>Attended <b>{row.attended}</b></span><span>Signed <b>{row.closed}</b></span><span>No shows <b>{Math.max(0, row.scheduled - row.attended)}</b></span></div></section>
               <section><small>MEMBERSHIP &amp; SALES</small><div><span>BOM APM <b>{row.bomApm}</b></span><span>Active paying <b>{row.activePaying}</b></span><span>Total members <b>{row.totalMembers}</b></span><span>Drops <b>{row.drops}</b></span></div></section>
               <section><small>GOAL RESULTS</small><div><span>Sales goal <b>{row.signupGoal}</b></span><span>Sales result <b>{row.signups}</b></span><span>Call goal <b>{CALL_MINUTE_GOAL.toLocaleString()}</b></span><span>Call result <b>{row.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</b></span></div></section>
-              <section className="history-person-rates"><small>SHOW &amp; CLOSE RATES BY PERSON</small>{personRates.length ? <div>{personRates.map((person) => <article key={person.person}><strong>{person.person}</strong><span><small>SHOW</small><b className={(person.showRate ?? 0) >= RATE_GOAL ? "goal-hit" : ""}>{person.showRate === null ? "—" : `${person.showRate}%`}</b></span><span><small>CLOSE</small><b className={(person.closeRate ?? 0) >= RATE_GOAL ? "goal-hit" : ""}>{person.closeRate === null ? "—" : `${person.closeRate}%`}</b></span><em>{person.booked} booked · {person.closed} signed</em></article>)}</div> : <p>Person-level trial results are awaiting the tracker feed.</p>}</section>
+              <section className="history-person-rates"><small>SHOW &amp; CLOSE RATES BY PERSON</small>{personRates.length ? <div>{personRates.map((person) => <article key={person.person}><strong>{person.person}</strong><span><small>SHOW</small><b className={(person.showRate ?? 0) >= RATE_GOAL ? "goal-hit" : ""}>{person.showRate === null ? "—" : `${person.showRate}%`}</b></span><span><small>CLOSE</small><b className={(person.closeRate ?? 0) >= RATE_GOAL ? "goal-hit" : ""}>{person.closeRate === null ? "—" : `${person.closeRate}%`}</b></span><em>{person.booked} booked · {person.closed} signed</em></article>)}</div> : <p>{isFinalized ? "Archived person-level trial results are not available for this month; current-month results are intentionally excluded." : "Person-level trial results are awaiting the tracker feed."}</p>}</section>
             </div>}
           </article>;
         })}
