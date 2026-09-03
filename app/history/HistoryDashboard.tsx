@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { teamTrialData, type TeamTrialPerformance } from "../team-trial-data";
+import { archivedTeamTrialData, type TeamTrialPerformance } from "../team-trial-data";
 
 type HistoryRow = {
   snapshotDate: string;
@@ -170,11 +170,9 @@ export default function HistoryDashboard() {
           const showRate = pct(row.attended, row.scheduled);
           const closeRate = pct(row.closed, row.attended);
           const isFinalized = row.status === "FINAL";
-          const personRates = (selectedPeriod === "2026-07"
-            ? teamTrialData
-            : isFinalized
-              ? []
-              : currentTeamTrials)
+          const personRates = (isFinalized
+            ? archivedTeamTrialData[selectedPeriod] ?? []
+            : currentTeamTrials)
             .filter((person) => person.center === row.center);
           return <article className={`history-center-card ${isExpanded ? "expanded" : ""}`} key={row.center}>
             <button type="button" onClick={() => setExpandedCenter(isExpanded ? null : row.center)} aria-expanded={isExpanded}>
