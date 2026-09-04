@@ -13,8 +13,7 @@ const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0)
 const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
 const progressTone = (value: number) =>
   value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
-const MONTHLY_CALL_MINUTE_GOAL = 3000;
-const CALL_PUSH_GOALS = [3500, 4000];
+const DEFAULT_CALL_MINUTE_GOAL = 3000;
 const DASHBOARD_FEED_URL = "/api/live-data";
 
 export default function Home() {
@@ -47,6 +46,7 @@ export default function Home() {
             },
             pastDue: Number(values[10]),
             reportDate: values[12],
+            callGoal: values[43] ? Number(values[43]) : undefined,
           };
         }).filter((item) => item.center && Number.isFinite(item.signups.current));
         if (memberships.length) setLiveMembershipData(memberships);
@@ -67,6 +67,7 @@ export default function Home() {
   );
   const totalMinutes = liveCallData.reduce((sum, item) => sum + item.totalMinutes, 0);
   const totalCalls = liveCallData.reduce((sum, item) => sum + item.totalCalls, 0);
+  const regionalCallGoal = liveMembershipData.reduce((sum, item) => sum + (item.callGoal ?? DEFAULT_CALL_MINUTE_GOAL), 0);
   const totalSignups = liveMembershipData.reduce((sum, item) => sum + item.signups.current, 0);
   const totalDrops = liveMembershipData.reduce((sum, item) => sum + item.drops.total, 0);
   const totalBomApm = liveMembershipData.reduce((sum, item) => sum + item.bomApm, 0);
@@ -113,7 +114,7 @@ export default function Home() {
           <article><small>TRIALS CLOSED</small><div className="regional-value-pair"><strong>{totals.closed}</strong><em>{rate(totals.closed, totals.showed)}</em></div><span>regional close rate</span></article>
           <article><small>SIGN-UPS MTD</small><strong>{totalSignups}</strong><span>regional new memberships</span></article>
           <article><small>ATTRITION RATE</small><strong>{regionalAttrition.toFixed(1)}%</strong><span>{totalDrops} drops ÷ {totalBomApm.toLocaleString()} BOM APM</span></article>
-          <article><small>CALL TIME</small><div className="regional-value-pair"><strong>{totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><em>{pct(totalMinutes, 12000).toFixed(1)}%</em></div><span>of 12,000 regional minutes</span></article>
+          <article><small>CALL TIME</small><div className="regional-value-pair"><strong>{totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><em>{pct(totalMinutes, regionalCallGoal).toFixed(1)}%</em></div><span>of {regionalCallGoal.toLocaleString()} regional minutes</span></article>
         </section>
 
         <RegionalLeaderboard memberships={liveMembershipData} reports={liveReports} reportingPeriod={reportingPeriodLabel} />
@@ -128,8 +129,10 @@ export default function Home() {
             const calls = liveCallData.find((item) => item.center === report.center) ?? liveCallData[0];
             const membership = liveMembershipData.find((item) => item.center === report.center);
             const centerAttrition = membership ? pct(membership.drops.total, membership.bomApm) : 0;
-            const callProgress = pct(calls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
-            const nextCallTarget = [MONTHLY_CALL_MINUTE_GOAL, ...CALL_PUSH_GOALS].find((goal) => goal > calls.totalMinutes)
+            const callGoal = membership?.callGoal ?? DEFAULT_CALL_MINUTE_GOAL;
+            const callTargets = [callGoal, callGoal + 500, callGoal + 1000];
+            const callProgress = pct(calls.totalMinutes, callGoal);
+            const nextCallTarget = callTargets.find((goal) => goal > calls.totalMinutes)
               ?? Math.ceil((calls.totalMinutes + 1) / 500) * 500;
             return (
               <Link className="overview-center-card" href={`/centers/${report.id}`} key={report.id}>

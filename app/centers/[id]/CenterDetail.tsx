@@ -24,8 +24,7 @@ const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
 const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor" : "attention");
 const progressTone = (value: number) =>
   value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
-const MONTHLY_CALL_MINUTE_GOAL = 3000;
-const CALL_PUSH_GOALS = [3500, 4000];
+const DEFAULT_CALL_MINUTE_GOAL = 3000;
 const MEMBERSHIP_FEED_URL = "/api/live-data";
 type Section = "overview" | "trials" | "calls" | "membership" | "forecast";
 
@@ -130,6 +129,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             },
             pastDue: Number(values[10]),
             reportDate: values[12],
+            callGoal: values[43] ? Number(values[43]) : undefined,
           };
         }).filter((item) => item.center && Number.isFinite(item.signups.current));
         if (updated.length) setLiveMembershipData(updated);
@@ -166,6 +166,8 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const people = livePeople.filter((item) => item.center === selected.center && item.totalMinutes > 0);
   const teamTrials = liveTeamTrials.filter((item) => item.center === selected.center);
   const membership = liveMembershipData.find((item) => item.center === selected.center);
+  const monthlyCallGoal = membership?.callGoal ?? DEFAULT_CALL_MINUTE_GOAL;
+  const callPushGoals = [monthlyCallGoal + 500, monthlyCallGoal + 1000];
   const yesterdayCall = liveYesterdayCalls.find((item) => item.center === selected.center);
   const yesterdayTrial = liveYesterdayTrials.find((item) => item.center === selected.center);
   const yesterdayPeople = liveYesterdayPeople
@@ -173,8 +175,8 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
     .sort((a, b) => b.totalMinutes - a.totalMinutes);
   const namedMinutes = people.reduce((sum, item) => sum + item.totalMinutes, 0);
   const sharedMinutes = Math.max(0, selectedCalls.totalMinutes - namedMinutes);
-  const callGoalPct = pct(selectedCalls.totalMinutes, MONTHLY_CALL_MINUTE_GOAL);
-  const nextCallTarget = [MONTHLY_CALL_MINUTE_GOAL, ...CALL_PUSH_GOALS].find((goal) => goal > selectedCalls.totalMinutes)
+  const callGoalPct = pct(selectedCalls.totalMinutes, monthlyCallGoal);
+  const nextCallTarget = [monthlyCallGoal, ...callPushGoals].find((goal) => goal > selectedCalls.totalMinutes)
     ?? Math.ceil((selectedCalls.totalMinutes + 1) / 500) * 500;
   const signupGoalPct = membership ? pct(membership.signups.current, membership.signups.goal) : 0;
   const attritionPct = membership ? pct(membership.drops.total, membership.bomApm) : 0;
@@ -357,9 +359,9 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
           <section className={`call-goal-hero ${progressTone(callGoalPct)}`}><div><small>{callGoalPct > 100 ? "MONTHLY GOAL SURPASSED ★" : callGoalPct >= 100 ? "MONTHLY GOAL HIT ✓" : "MONTHLY CALL-TIME GOAL"}</small><strong>{callGoalPct.toFixed(1)}%</strong><span>{selectedCalls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} minutes · {Math.max(0, nextCallTarget - selectedCalls.totalMinutes).toLocaleString(undefined, { maximumFractionDigits: 0 })} remaining to the {nextCallTarget.toLocaleString()}-minute milestone</span></div><i><b style={{ width: `${Math.min(callGoalPct, 100)}%` }} /></i></section>
           <section className="signup-milestones call-milestones" aria-label="Talk-time milestone ladder">
             {[
-              { goal: MONTHLY_CALL_MINUTE_GOAL, label: "ORIGINAL GOAL", tone: "original" },
-              { goal: CALL_PUSH_GOALS[0], label: "PUSH GOAL", tone: "push" },
-              { goal: CALL_PUSH_GOALS[1], label: "NEXT LEVEL", tone: "next" },
+              { goal: monthlyCallGoal, label: "ORIGINAL GOAL", tone: "original" },
+              { goal: callPushGoals[0], label: "PUSH GOAL", tone: "push" },
+              { goal: callPushGoals[1], label: "NEXT LEVEL", tone: "next" },
             ].map((milestone, index) => {
               const earned = selectedCalls.totalMinutes >= milestone.goal;
               const remaining = Math.max(0, milestone.goal - selectedCalls.totalMinutes);

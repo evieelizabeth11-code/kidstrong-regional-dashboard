@@ -21,6 +21,7 @@ export type CenterMembership = {
   };
   pastDue: number;
   reportDate?: string;
+  callGoal?: number;
 };
 
 export const membershipData: CenterMembership[] = [
@@ -32,6 +33,7 @@ export const membershipData: CenterMembership[] = [
     drops: { total: 26, pending: 0 },
     signups: { goal: 60, current: 31, trial: 31, nonTrial: 0 },
     pastDue: 13,
+    callGoal: 2800,
   },
   {
     center: "Turnersville",
@@ -41,6 +43,7 @@ export const membershipData: CenterMembership[] = [
     drops: { total: 46, pending: 1 },
     signups: { goal: 50, current: 33, trial: 30, nonTrial: 3 },
     pastDue: 12,
+    callGoal: 2600,
   },
   {
     center: "Mount Laurel",
@@ -50,6 +53,7 @@ export const membershipData: CenterMembership[] = [
     drops: { total: 26, pending: 3 },
     signups: { goal: 36, current: 46, trial: 41, nonTrial: 5 },
     pastDue: 16,
+    callGoal: 3100,
   },
   {
     center: "Voorhees",
@@ -59,5 +63,6 @@ export const membershipData: CenterMembership[] = [
     drops: { total: 34, pending: 7 },
     signups: { goal: 51, current: 45, trial: 41, nonTrial: 4 },
     pastDue: 19,
+    callGoal: 2700,
   },
 ];
