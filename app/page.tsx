@@ -96,7 +96,7 @@ export default function Home() {
     <main className="overview-page">
       <header className="navy-header brandless-header">
         <div className="header-title">
-          <span>REGIONAL PERFORMANCE COMMAND CENTER</span>
+          <span>SOUTHERN NEW JERSEY PERFORMANCE HUB</span>
           <strong>{reportingPeriodLabel.toUpperCase()}</strong>
         </div>
         <ReportingPeriodNav />
