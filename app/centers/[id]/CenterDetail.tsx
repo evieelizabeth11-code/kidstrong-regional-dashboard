@@ -41,6 +41,22 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
   const [livePeople, setLivePeople] = useState<PersonCalls[]>(callPersonData);
   const [liveTeamTrials, setLiveTeamTrials] = useState<TeamTrialPerformance[]>(teamTrialData);
   const [snapshotDate, setSnapshotDate] = useState("Saturday, August 1");
+  const [todayDate, setTodayDate] = useState("");
+
+  useEffect(() => {
+    const updateTodayDate = () => {
+      setTodayDate(new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "America/New_York",
+      }).format(new Date()));
+    };
+
+    updateTodayDate();
+    const timer = window.setInterval(updateTodayDate, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const loadMembershipData = async () => {
@@ -264,7 +280,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         </nav>
 
         <section className="detail-hero">
-          <div><p className="kicker">{reportingPeriodLabel.toUpperCase()} · {sectionTitle}</p><h1>{selected.center}</h1><p>{selected.dateRange}</p></div>
+          <div><p className="kicker">{reportingPeriodLabel.toUpperCase()} · {sectionTitle}</p><h1>{selected.center}</h1><p>{todayDate}</p></div>
           <div className="center-switcher">{liveReports.map((report) => <Link className={report.id === centerId ? "active" : ""} href={`/centers/${report.id}${section === "overview" ? "" : `/${section}`}`} key={report.id}>{report.center}</Link>)}</div>
         </section>
 
