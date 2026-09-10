@@ -105,8 +105,7 @@ export default function Home() {
       <div className="page-shell overview-shell">
         <section className="overview-hero">
           <div>
-            <h1>NJ/CT/NY/DE/MD. <span>Southern New Jersey.</span></h1>
-            <p>See the regional picture at a glance, then select a center for its complete trial, call-time, and membership performance story.</p>
+            <h1><span>Southern New Jersey</span></h1>
           </div>
         </section>
 
