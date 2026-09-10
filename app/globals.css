@@ -481,8 +481,14 @@ footer { display:flex;justify-content:space-between;color:#8294b8;font-size:9px;
 .overview-card-top { display:flex;justify-content:space-between;gap:15px;align-items:flex-start; }
 .overview-card-top small { color:var(--green);font-size:9px;font-weight:900;letter-spacing:.08em; }
 .overview-card-top h2 { margin:5px 0 0;font-size:24px;letter-spacing:-.03em; }
-.overview-card-top>span { color:white;font-size:8px;font-weight:900;letter-spacing:.08em;white-space:nowrap; }
-.overview-card-top>span b { color:var(--green);font-size:16px;margin-left:4px; }
+.overview-card-actions { display:flex;flex-direction:column;align-items:flex-end;gap:8px; }
+.overview-card-open { color:white;font-size:8px;font-weight:900;letter-spacing:.08em;white-space:nowrap; }
+.overview-card-open b { color:var(--green);font-size:16px;margin-left:4px; }
+.overview-card-status { display:inline-flex;align-items:center;padding:6px 9px;border:1px solid;border-radius:99px;font-size:8px;font-weight:950;letter-spacing:.08em;white-space:nowrap; }
+.overview-card-status.on-track { color:#8ef3aa;border-color:rgba(83,216,122,.6);background:rgba(83,216,122,.14); }
+.overview-card-status.warning { color:#ffe09a;border-color:rgba(255,209,102,.6);background:rgba(255,209,102,.14); }
+.overview-card-status.off-track { color:#ffaaaa;border-color:rgba(255,107,107,.62);background:rgba(255,107,107,.14); }
+.overview-card-status.pending { color:#b7c7e6;border-color:rgba(183,199,230,.42);background:rgba(183,199,230,.1); }
 .overview-card-metrics { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:28px 0;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12);padding:18px 0; }
 .overview-card-metrics div { border-right:1px solid rgba(255,255,255,.1); }
 .overview-card-metrics div:last-child { border:0; }

@@ -89,6 +89,8 @@ export default function Home() {
   const reportingPeriodLabel = latestReportDate
     ? new Date(`${latestReportDate}T12:00:00`).toLocaleDateString("en-US", { month: "long", year: "numeric" })
     : "August 2026";
+  const daysInMonth = new Date(dataThrough.getFullYear(), dataThrough.getMonth() + 1, 0).getDate();
+  const elapsedDays = Math.max(1, dataThrough.getDate());
 
   return (
     <main className="overview-page">
@@ -134,11 +136,22 @@ export default function Home() {
             const callProgress = pct(calls.totalMinutes, callGoal);
             const nextCallTarget = callTargets.find((goal) => goal > calls.totalMinutes)
               ?? Math.ceil((calls.totalMinutes + 1) / 500) * 500;
+            const expectedSignups = membership ? membership.signups.goal * (elapsedDays / daysInMonth) : 0;
+            const paceStatus = !membership
+              ? { label: "STATUS PENDING", tone: "pending" }
+              : membership.signups.current >= expectedSignups - 1
+                ? { label: "ON TRACK", tone: "on-track" }
+                : membership.signups.current >= expectedSignups * 0.8
+                  ? { label: "WARNING", tone: "warning" }
+                  : { label: "OFF TRACK", tone: "off-track" };
             return (
               <Link className="overview-center-card" href={`/centers/${report.id}`} key={report.id}>
                 <div className="overview-card-top">
                   <div><small>{reportingPeriodLabel.toUpperCase()}</small><h2>{report.center}</h2></div>
-                  <span>OPEN CENTER <b>→</b></span>
+                  <div className="overview-card-actions">
+                    <span className={`overview-card-status ${paceStatus.tone}`}>{paceStatus.label}</span>
+                    <span className="overview-card-open">OPEN CENTER <b>→</b></span>
+                  </div>
                 </div>
                 <div className="overview-card-metrics">
                   <div><small>SIGNS MTD</small><strong>{membership?.signups.current ?? "—"}</strong></div>
