@@ -489,13 +489,31 @@ footer { display:flex;justify-content:space-between;color:#8294b8;font-size:9px;
 .overview-card-status.warning { color:#ffe09a;border-color:rgba(255,209,102,.6);background:rgba(255,209,102,.14); }
 .overview-card-status.off-track { color:#ffaaaa;border-color:rgba(255,107,107,.62);background:rgba(255,107,107,.14); }
 .overview-card-status.pending { color:#b7c7e6;border-color:rgba(183,199,230,.42);background:rgba(183,199,230,.1); }
+.overview-stoplight-legend { display:flex;align-items:center;justify-content:space-between;gap:18px;margin:-5px 0 15px;padding:10px 13px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(2,11,32,.46); }
+.overview-stoplight-legend>div { display:flex;align-items:center;gap:7px;flex-wrap:wrap; }
+.overview-stoplight-legend span { display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid;border-radius:99px;font-size:7px;font-weight:950;letter-spacing:.07em; }
+.overview-stoplight-legend span::before { content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 7px currentColor; }
+.overview-stoplight-legend .green { color:#72e995;border-color:rgba(83,216,122,.48);background:rgba(83,216,122,.1); }
+.overview-stoplight-legend .amber { color:#ffd166;border-color:rgba(255,209,102,.48);background:rgba(255,209,102,.1); }
+.overview-stoplight-legend .red { color:#ff8585;border-color:rgba(255,107,107,.5);background:rgba(255,107,107,.1); }
+.overview-stoplight-legend small { color:#9fb0d2;font-size:9px;text-align:right; }
 .overview-card-metrics { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:28px 0;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12);padding:18px 0; }
-.overview-card-metrics div { border-right:1px solid rgba(255,255,255,.1); }
-.overview-card-metrics div:last-child { border:0; }
+.overview-card-metrics .scorecard-metric { padding:10px 8px;border:1px solid;border-radius:9px;background:rgba(2,11,32,.42);transition:background .2s ease,border-color .2s ease; }
 .overview-card-metrics small { display:block;color:#9fb0d2;font-size:7px;font-weight:900;margin-bottom:6px; }
 .overview-card-metrics strong { font-size:22px;color:white; }
-.overview-card-metrics .featured-rate strong { font-size:29px;letter-spacing:-.04em;color:var(--green); }
-.overview-card-metrics .attrition-rate strong { color:#ffd166;font-size:25px;letter-spacing:-.04em; }
+.overview-card-metrics .show-metric strong,.overview-card-metrics .close-metric strong { font-size:27px;letter-spacing:-.04em; }
+.overview-card-metrics .attrition-metric strong { font-size:24px;letter-spacing:-.04em; }
+.overview-card-metrics .signup-metric { --metric-green:83,216,122; }
+.overview-card-metrics .show-metric { --metric-green:86,224,158; }
+.overview-card-metrics .close-metric { --metric-green:54,196,116; }
+.overview-card-metrics .attrition-metric { --metric-green:118,232,139; }
+.overview-card-metrics .metric-green { border-color:rgba(var(--metric-green),.56);background:rgba(var(--metric-green),.13); }
+.overview-card-metrics .metric-green strong { color:rgb(var(--metric-green)); }
+.overview-card-metrics .metric-amber { border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.11); }
+.overview-card-metrics .metric-amber strong { color:#ffd166; }
+.overview-card-metrics .metric-red { border-color:rgba(255,107,107,.5);background:rgba(255,107,107,.11); }
+.overview-card-metrics .metric-red strong { color:#ff8585; }
+.overview-card-metrics .metric-pending { border-color:rgba(183,199,230,.34); }
 .overview-call-goal>div { display:flex;justify-content:space-between;font-size:9px;font-weight:900;color:#c4d2ed; }
 .overview-call-goal>div strong { color:var(--green);font-size:14px; }
 .overview-call-goal i,.detail-call-progress i { display:block;height:8px;background:#020b20;border-radius:99px;overflow:hidden;margin:10px 0 8px; }
@@ -509,6 +527,12 @@ footer { display:flex;justify-content:space-between;color:#8294b8;font-size:9px;
 .overview-call-goal.progress-behind>div strong,.call-goal-hero.progress-behind strong { color:#ff6b6b; }
 .overview-call-goal.progress-close>div strong,.call-goal-hero.progress-close strong { color:#ffd166; }
 .overview-call-goal.progress-goal>div strong,.overview-call-goal.progress-surpassed>div strong,.call-goal-hero.progress-goal strong,.call-goal-hero.progress-surpassed strong { color:#53d87a; }
+.overview-call-goal.metric-red i b { background:linear-gradient(90deg,#b91c1c,#ff5f5f); }
+.overview-call-goal.metric-amber i b { background:linear-gradient(90deg,#d08a00,#ffd166); }
+.overview-call-goal.metric-green i b { background:linear-gradient(90deg,#218c4a,#53d87a);box-shadow:0 0 12px rgba(83,216,122,.42); }
+.overview-call-goal.metric-red>div strong { color:#ff8585; }
+.overview-call-goal.metric-amber>div strong { color:#ffd166; }
+.overview-call-goal.metric-green>div strong { color:#53d87a; }
 .center-section-card.progress-surpassed,.call-goal-hero.progress-surpassed { border-color:rgba(109,231,255,.7);box-shadow:0 0 24px rgba(83,216,122,.13); }
 .detail-nav { display:flex;justify-content:space-between;align-items:center;margin-bottom:28px; }
 .detail-nav>a { color:var(--green);font-weight:800;font-size:11px; }

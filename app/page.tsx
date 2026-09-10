@@ -11,8 +11,16 @@ import { mergeOfficialTrialFeed } from "./trial-feed";
 
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
 const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
-const progressTone = (value: number) =>
-  value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
+type StoplightTone = "metric-green" | "metric-amber" | "metric-red" | "metric-pending";
+const thresholdTone = (value: number, greenAt: number, amberAt: number): StoplightTone =>
+  value >= greenAt ? "metric-green" : value >= amberAt ? "metric-amber" : "metric-red";
+const attritionTone = (value: number): StoplightTone =>
+  value < 6 ? "metric-green" : value < 9 ? "metric-amber" : "metric-red";
+const paceTone = (actual: number, expected: number): StoplightTone => {
+  if (!expected) return "metric-pending";
+  const pace = actual / expected;
+  return pace >= 1 ? "metric-green" : pace >= 0.8 ? "metric-amber" : "metric-red";
+};
 const DEFAULT_CALL_MINUTE_GOAL = 3000;
 const DASHBOARD_FEED_URL = "/api/live-data";
 
@@ -125,6 +133,11 @@ export default function Home() {
           <span>{totalCalls.toLocaleString()} calls tracked this month</span>
         </section>
 
+        <div className="overview-stoplight-legend" aria-label="Scorecard stoplight guide">
+          <div><span className="green">ON TRACK</span><span className="amber">WATCH</span><span className="red">NEEDS ATTENTION</span></div>
+          <small>Sign-ups &amp; talk time use today&apos;s pace · Show 70%+ · Close 70%+ · Attrition under 6%</small>
+        </div>
+
         <section className="overview-center-grid">
           {liveReports.map((report) => {
             const calls = liveCallData.find((item) => item.center === report.center) ?? liveCallData[0];
@@ -136,13 +149,20 @@ export default function Home() {
             const nextCallTarget = callTargets.find((goal) => goal > calls.totalMinutes)
               ?? Math.ceil((calls.totalMinutes + 1) / 500) * 500;
             const expectedSignups = membership ? membership.signups.goal * (elapsedDays / daysInMonth) : 0;
-            const paceStatus = !membership
-              ? { label: "STATUS PENDING", tone: "pending" }
-              : membership.signups.current >= expectedSignups - 1
-                ? { label: "ON TRACK", tone: "on-track" }
-                : membership.signups.current >= expectedSignups * 0.8
-                  ? { label: "WARNING", tone: "warning" }
-                  : { label: "OFF TRACK", tone: "off-track" };
+            const signupTone = membership ? paceTone(membership.signups.current, expectedSignups) : "metric-pending";
+            const showTone = thresholdTone(pct(report.showed, report.scheduled), 70, 60);
+            const closeTone = thresholdTone(pct(report.closed, report.showed), 70, 50);
+            const centerAttritionTone = membership ? attritionTone(centerAttrition) : "metric-pending";
+            const expectedCallMinutes = callGoal * (elapsedDays / daysInMonth);
+            const callTone = paceTone(calls.totalMinutes, expectedCallMinutes);
+            const callPaceLabel = callTone === "metric-green" ? "ON PACE" : callTone === "metric-amber" ? "WATCH" : "OFF PACE";
+            const paceStatus = signupTone === "metric-green"
+              ? { label: "ON TRACK", tone: "on-track" }
+              : signupTone === "metric-amber"
+                ? { label: "WARNING", tone: "warning" }
+                : signupTone === "metric-red"
+                  ? { label: "OFF TRACK", tone: "off-track" }
+                  : { label: "STATUS PENDING", tone: "pending" };
             return (
               <Link className="overview-center-card" href={`/centers/${report.id}`} key={report.id}>
                 <div className="overview-card-top">
@@ -153,13 +173,13 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="overview-card-metrics">
-                  <div><small>SIGNS MTD</small><strong>{membership?.signups.current ?? "—"}</strong></div>
-                  <div className="featured-rate"><small>SHOW RATE</small><strong>{rate(report.showed, report.scheduled)}</strong></div>
-                  <div className="featured-rate"><small>CLOSE RATE</small><strong>{rate(report.closed, report.showed)}</strong></div>
-                  <div className="attrition-rate"><small>ATTRITION</small><strong>{membership ? `${centerAttrition.toFixed(1)}%` : "—"}</strong></div>
+                  <div className={`scorecard-metric signup-metric ${signupTone}`}><small>SIGNS MTD</small><strong>{membership?.signups.current ?? "—"}</strong></div>
+                  <div className={`scorecard-metric show-metric ${showTone}`}><small>SHOW RATE</small><strong>{rate(report.showed, report.scheduled)}</strong></div>
+                  <div className={`scorecard-metric close-metric ${closeTone}`}><small>CLOSE RATE</small><strong>{rate(report.closed, report.showed)}</strong></div>
+                  <div className={`scorecard-metric attrition-metric ${centerAttritionTone}`}><small>ATTRITION</small><strong>{membership ? `${centerAttrition.toFixed(1)}%` : "—"}</strong></div>
                 </div>
-                <div className={`overview-call-goal ${progressTone(callProgress)}`}>
-                  <div><span>{callProgress > 100 ? "GOAL SURPASSED ★" : callProgress >= 100 ? "GOAL HIT ✓" : "CALL-TIME GOAL"}</span><strong>{callProgress.toFixed(1)}%</strong></div>
+                <div className={`overview-call-goal ${callTone}`}>
+                  <div><span>CALL-TIME PACE · {callPaceLabel}</span><strong>{callProgress.toFixed(1)}% of goal</strong></div>
                   <i><b style={{ width: `${Math.min(callProgress, 100)}%` }} /></i>
                   <small>{calls.totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} minutes · {Math.max(0, nextCallTarget - calls.totalMinutes).toLocaleString(undefined, { maximumFractionDigits: 0 })} to {nextCallTarget.toLocaleString()} milestone</small>
                 </div>
