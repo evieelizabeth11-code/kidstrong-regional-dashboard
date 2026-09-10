@@ -68,7 +68,7 @@ function enrichCenter(item: ForecastInput): ForecastCenter {
   const projectedMonthlyTrialSigns = projectedRemainingTrials * showRate * closeRate;
   const projectedMonthlyOtherSales = Math.max(0, (item.signups.nonTrial / elapsedDays) * remainingDays);
   const projectedMonthlyTotalSales = projectedMonthlyTrialSigns + projectedMonthlyOtherSales;
-  const currentApm = item.activePaying ?? item.bomApm;
+  const currentApm = item.activePaying ?? (item.totalMembers - item.holds.total - item.pastDue);
   const holdMovement = item.holds.lifting - (item.holds.starting ?? 0);
   return {
     ...item,
@@ -159,7 +159,7 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
         </div>
       </nav>}
       <section className="forecast-hero">
-        <div><p className="kicker">{selectedCenter?.center.toUpperCase() ?? "LIVE"} GROWTH ROADMAP</p><h1>Turn lead flow into a <span>clear month-end forecast.</span></h1><p>See where the last 30 days of leads are taking the center, then adjust show and close rates to see the direct impact on month-end APM.</p></div>
+        <div><p className="kicker">{selectedCenter?.center.toUpperCase() ?? "LIVE"} MEMBERSHIP FORECAST</p><h1>See where your current pace will <span>finish the month.</span></h1><p>Start with the same likely outcome shown on the Membership tab, then adjust show and close rates to see what changes.</p></div>
         {centerId && <nav className="center-switcher" aria-label="Switch center and stay in Forecast">
           {reports.map((report) => <Link className={report.id === centerId ? "active" : ""} href={`/centers/${report.id}/forecast`} key={report.id}>{report.center}</Link>)}
         </nav>}
@@ -172,58 +172,47 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
         <article><small>DATA THROUGH</small><strong>{latestDataThrough?.toLocaleDateString("en-US", { month: "short", day: "numeric" }) ?? "—"}</strong><span>forecast refreshes with the live feed</span></article>
       </section>}
 
-      <section className="forecast-method">
-        <span>i</span><div><small>HOW THE FORECAST WORKS</small><strong>30-day lead pace × lead-to-booked rate × current show rate × current close rate = expected remaining trial sales</strong><p>Projected month-end APM also includes remaining non-trial sales, scheduled hold movement, and pending drops. The sliders show exactly how stronger execution changes the result.</p></div>
-      </section>
-
       <section className={`forecast-center-grid ${centerId ? "single-center" : ""}`}>
         {forecasts.map((center) => {
-          const currentApm = center.activePaying ?? center.bomApm;
-          const nextPayoutDate = new Date(center.dataThrough.getFullYear(), center.dataThrough.getMonth() + 1, 1);
+          const currentApm = center.activePaying ?? (center.totalMembers - center.holds.total - center.pastDue);
           const checkpoints = GROWTH_CHECKPOINTS[center.center] ?? center.milestones;
           const nextCheckpoint = checkpoints.find((target) => target > currentApm) ?? checkpoints[checkpoints.length - 1];
-          const priorCheckpoint = Math.max(0, nextCheckpoint - 50);
           const membersNeeded = Math.max(0, nextCheckpoint - currentApm);
-          const checkpointProgress = Math.max(0, Math.min(100, ((currentApm - priorCheckpoint) / Math.max(1, nextCheckpoint - priorCheckpoint)) * 100));
           const currentMonthHoldMovement = center.holds.lifting - (center.holds.starting ?? 0);
-          const currentMonthEndApm = currentApm + center.projectedMonthlyTotalSales + currentMonthHoldMovement - center.drops.pending;
+          const projectedSignupsAtPace = Math.round((center.signups.current / center.elapsedDays) * center.daysInMonth);
+          const projectedAdditionalSignups = Math.max(0, projectedSignupsAtPace - center.signups.current);
+          const currentPaceMonthEndApm = currentApm + projectedAdditionalSignups + currentMonthHoldMovement - center.drops.pending;
           const selectedShowRate = scenarioShowRates[center.center] ?? center.showRate;
           const selectedCloseRate = scenarioCloseRates[center.center] ?? center.closeRate;
+          const currentRateTrialSigns = center.projectedRemainingTrials * center.showRate * center.closeRate;
           const scenarioTrialSigns = center.projectedRemainingTrials * selectedShowRate * selectedCloseRate;
-          const scenarioTotalSales = scenarioTrialSigns + center.projectedMonthlyOtherSales;
-          const scenarioMonthEndApm = currentApm + scenarioTotalSales + currentMonthHoldMovement - center.drops.pending;
-          const scenarioApmLift = scenarioMonthEndApm - currentMonthEndApm;
-          const scenarioSalesLift = scenarioTotalSales - center.projectedMonthlyTotalSales;
+          const scenarioSalesLift = scenarioTrialSigns - currentRateTrialSigns;
+          const scenarioAdditionalSignups = Math.max(0, projectedAdditionalSignups + scenarioSalesLift);
+          const scenarioMonthEndApm = currentPaceMonthEndApm + scenarioSalesLift;
+          const scenarioApmLift = scenarioMonthEndApm - currentPaceMonthEndApm;
           return <article className="forecast-center-card" key={center.center}>
             <div className="forecast-card-head">
-              <div><small>{center.center.toUpperCase()}</small><strong>{currentApm} <em>APM</em></strong><span>{center.rolling30Leads ?? 0} leads in the last 30 days · data through {center.dataThrough.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
-              <div className="forecast-payout-apm"><small>PROJECTED {nextPayoutDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()} APM</small><strong>{Math.round(currentMonthEndApm)}</strong><span>30-day lead pace + current conversion</span></div>
+              <div><small>CURRENT ACTIVE PAYING</small><strong>{currentApm} <em>APM</em></strong><span>Live membership data through {center.dataThrough.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
+              <div className="forecast-payout-apm"><small>IF CURRENT PACE CONTINUES</small><strong>{Math.round(currentPaceMonthEndApm)}</strong><span>projected month-end APM</span></div>
             </div>
 
-            <section className="forecast-october-challenge" aria-label={`${center.center} growth checkpoint`}>
-              <div className="forecast-challenge-heading">
-                <div><small>NEXT GROWTH CHECKPOINT</small><strong>{nextCheckpoint} APM</strong><span>Here&apos;s what moves the number this week.</span></div>
-                <div><strong>{membersNeeded}</strong><span>net members to go</span></div>
+            <section className="forecast-rate-simulator" aria-label={`${center.center} show and close rate simulator`}>
+              <div className="forecast-simulator-head"><div><small>TRY A DIFFERENT OUTCOME</small><strong>Adjust show and close rates</strong></div><button type="button" onClick={() => { setScenarioShowRates((current) => ({ ...current, [center.center]: center.showRate })); setScenarioCloseRates((current) => ({ ...current, [center.center]: center.closeRate })); }}>Reset to current rates</button></div>
+              <div className="forecast-slider-grid">
+                <label><span><b>SHOW RATE</b><strong>{(selectedShowRate * 100).toFixed(0)}%</strong></span><input aria-label={`${center.center} show rate`} type="range" min="0" max="100" step="1" value={Math.round(selectedShowRate * 100)} onChange={(event) => setScenarioShowRates((current) => ({ ...current, [center.center]: Number(event.target.value) / 100 }))} /><small>Current: {(center.showRate * 100).toFixed(1)}%</small></label>
+                <label><span><b>CLOSE RATE</b><strong>{(selectedCloseRate * 100).toFixed(0)}%</strong></span><input aria-label={`${center.center} close rate`} type="range" min="0" max="100" step="1" value={Math.round(selectedCloseRate * 100)} onChange={(event) => setScenarioCloseRates((current) => ({ ...current, [center.center]: Number(event.target.value) / 100 }))} /><small>Current: {(center.closeRate * 100).toFixed(1)}%</small></label>
               </div>
-              <div className="forecast-challenge-track"><span style={{ width: `${checkpointProgress}%` }} /></div>
-              <div className="forecast-challenge-labels"><span>{currentApm} APM today</span><strong>{nextCheckpoint} APM checkpoint</strong></div>
-              <div className="forecast-checkpoint-row">
-                {checkpoints.map((target) => <div className={currentApm >= target ? "achieved" : target === nextCheckpoint ? "next" : ""} key={target}><span>{currentApm >= target ? "✓" : "★"}</span><strong>{target}</strong><small>{currentApm >= target ? "REACHED" : target === nextCheckpoint ? "NEXT" : "AHEAD"}</small></div>)}
+              <div className="forecast-impact-grid" aria-live="polite">
+                <div><small>CURRENT PACE</small><strong>{Math.round(currentPaceMonthEndApm)} APM</strong><span>same likely outcome as Membership</span></div>
+                <div className={scenarioApmLift > .5 ? "improved" : scenarioApmLift < -.5 ? "declined" : ""}><small>WITH THESE RATES</small><strong>{Math.round(scenarioMonthEndApm)} APM</strong><span>{scenarioApmLift >= 0 ? "+" : ""}{scenarioApmLift.toFixed(1)} APM impact</span></div>
+                <div><small>REMAINING SIGN-UPS</small><strong>{scenarioAdditionalSignups.toFixed(1)}</strong><span>{scenarioSalesLift >= 0 ? "+" : ""}{scenarioSalesLift.toFixed(1)} vs current rates</span></div>
+                <div><small>KNOWN MEMBER MOVEMENT</small><strong>{currentMonthHoldMovement - center.drops.pending >= 0 ? "+" : ""}{currentMonthHoldMovement - center.drops.pending}</strong><span>hold movement minus pending drops</span></div>
               </div>
             </section>
 
-            <section className="forecast-rate-simulator" aria-label={`${center.center} show and close rate simulator`}>
-              <div className="forecast-simulator-head"><div><small>MOVE THE NEEDLE</small><strong>Adjust the rates. See the month-end result.</strong></div><button type="button" onClick={() => { setScenarioShowRates((current) => ({ ...current, [center.center]: center.showRate })); setScenarioCloseRates((current) => ({ ...current, [center.center]: center.closeRate })); }}>Reset to current</button></div>
-              <div className="forecast-slider-grid">
-                <label><span><b>SHOW RATE</b><strong>{(selectedShowRate * 100).toFixed(0)}%</strong></span><input aria-label={`${center.center} show rate`} type="range" min="30" max="100" step="1" value={Math.round(selectedShowRate * 100)} onChange={(event) => setScenarioShowRates((current) => ({ ...current, [center.center]: Number(event.target.value) / 100 }))} /><small>Current: {(center.showRate * 100).toFixed(1)}%</small></label>
-                <label><span><b>CLOSE RATE</b><strong>{(selectedCloseRate * 100).toFixed(0)}%</strong></span><input aria-label={`${center.center} close rate`} type="range" min="20" max="100" step="1" value={Math.round(selectedCloseRate * 100)} onChange={(event) => setScenarioCloseRates((current) => ({ ...current, [center.center]: Number(event.target.value) / 100 }))} /><small>Current: {(center.closeRate * 100).toFixed(1)}%</small></label>
-              </div>
-              <div className="forecast-impact-grid" aria-live="polite">
-                <div><small>AT CURRENT RATES</small><strong>{Math.round(currentMonthEndApm)} APM</strong><span>projected month end</span></div>
-                <div className={scenarioApmLift > .5 ? "improved" : scenarioApmLift < -.5 ? "declined" : ""}><small>WITH THESE RATES</small><strong>{Math.round(scenarioMonthEndApm)} APM</strong><span>{scenarioApmLift >= 0 ? "+" : ""}{scenarioApmLift.toFixed(1)} APM impact</span></div>
-                <div><small>PROJECTED SALES</small><strong>{scenarioTotalSales.toFixed(1)}</strong><span>{scenarioSalesLift >= 0 ? "+" : ""}{scenarioSalesLift.toFixed(1)} vs current rates</span></div>
-                <div><small>KNOWN MEMBER MOVEMENT</small><strong>{currentMonthHoldMovement - center.drops.pending >= 0 ? "+" : ""}{currentMonthHoldMovement - center.drops.pending}</strong><span>hold movement minus pending drops</span></div>
-              </div>
+            <section className="forecast-next-checkpoint" aria-label={`${center.center} next growth checkpoint`}>
+              <div><small>NEXT GROWTH CHECKPOINT</small><strong>{nextCheckpoint} APM</strong></div>
+              <span>{membersNeeded} net members from today&apos;s APM</span>
             </section>
 
             <div className="forecast-rate-strip" aria-label={`${center.center} forecast rates`}>
@@ -232,12 +221,6 @@ export default function ForecastDashboard({ centerId }: { centerId?: string }) {
               <div><small>30-DAY LEAD-TO-BOOKED</small><strong>{(center.leadToBookedRate * 100).toFixed(1)}%</strong><span>{center.rolling30Booked ?? 0} booked ÷ {center.rolling30Leads ?? 0} leads</span></div>
             </div>
 
-            <div className="forecast-pace-equation">
-              <div><small>AVERAGE LEADS</small><strong>{center.dailyLeadAverage.toFixed(1)} <em>/ day</em></strong><span>{Math.round(center.projectedRemainingLeads)} expected over {center.remainingDays} days</span></div><b>→</b>
-              <div><small>EXPECTED TRIALS</small><strong>{Math.round(center.projectedRemainingTrials)}</strong><span>{(center.leadToBookedRate * 100).toFixed(0)}% of remaining leads</span></div><b>→</b>
-              <div><small>EXPECTED SHOWS</small><strong>{Math.round(center.projectedRemainingTrials * center.showRate)}</strong><span>{(center.showRate * 100).toFixed(0)}% current show rate</span></div><b>→</b>
-              <div className="positive"><small>EXPECTED CLOSES</small><strong>{center.projectedMonthlyTrialSigns.toFixed(1)}</strong><span>{(center.closeRate * 100).toFixed(0)}% current close rate</span></div>
-            </div>
           </article>;
         })}
       </section>
