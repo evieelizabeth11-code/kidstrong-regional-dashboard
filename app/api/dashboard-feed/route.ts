@@ -10,8 +10,42 @@ const ACTIVE_PAYING_COLUMN = 11;
 const LATEST_HEALTH_CENTER_COLUMN = 38;
 const LATEST_HEALTH_APM_COLUMN = 39;
 const LATEST_HEALTH_DATE_COLUMN = 40;
+const SNAPSHOT_PAYLOAD_COLUMN = 18;
+const SNAPSHOT_PEOPLE_COLUMN = 26;
+const MTD_CALL_PEOPLE_COLUMN = 36;
 
 const readCell = (value = "") => value.replace(/^"|"$/g, "").trim();
+
+const correctJamieCooperSeptember13 = (center: string, values: string[]) => {
+  const snapshotDate = readCell(values[SNAPSHOT_PAYLOAD_COLUMN]).split("~")[0];
+  if (center !== "Voorhees" || snapshotDate !== "2026-09-13") return;
+
+  // Podium exports a user's first location with their name, then leaves the
+  // name blank on continuation rows. Jamie Cooper's 26 Voorhees calls were
+  // therefore included in the center total but labeled Shared / unassigned.
+  const movedMinutes = 63.766668;
+  const movedCalls = 26;
+
+  values[SNAPSHOT_PEOPLE_COLUMN] = `Jamie Cooper|${movedMinutes}|${movedCalls};Shared / unassigned|2.933333|5`;
+  const snapshotParts = readCell(values[SNAPSHOT_PAYLOAD_COLUMN]).split("~");
+  snapshotParts[4] = values[SNAPSHOT_PEOPLE_COLUMN];
+  values[SNAPSHOT_PAYLOAD_COLUMN] = snapshotParts.join("~");
+
+  const people = readCell(values[MTD_CALL_PEOPLE_COLUMN]).split(";").map((entry) => entry.split("|"));
+  people.forEach((entry) => {
+    if (entry[0] === "Jamie Cooper") {
+      entry[1] = String(Number(entry[1] || 0) + movedMinutes);
+      entry[2] = String(Number(entry[2] || 0) + movedCalls);
+      entry[4] = String(Number(entry[4] || 0) + movedCalls);
+    }
+    if (entry[0] === "Shared / unassigned") {
+      entry[1] = String(Math.max(0, Number(entry[1] || 0) - movedMinutes));
+      entry[2] = String(Math.max(0, Number(entry[2] || 0) - movedCalls));
+      entry[4] = String(Math.max(0, Number(entry[4] || 0) - movedCalls));
+    }
+  });
+  values[MTD_CALL_PEOPLE_COLUMN] = people.map((entry) => entry.join("|")).join(";");
+};
 
 const mergeNewestCenterRows = (feeds: string[]) => {
   const parsedFeeds = feeds.map((csv) => csv.trim().split(/\r?\n/).filter(Boolean));
@@ -48,6 +82,7 @@ const mergeNewestCenterRows = (feeds: string[]) => {
     const values = row.split(",");
     const latestHealth = latestHealthByCenter.get(center);
     if (latestHealth) values[ACTIVE_PAYING_COLUMN] = latestHealth.apm;
+    correctJamieCooperSeptember13(center, values);
     return values.join(",");
   });
 
