@@ -21,7 +21,7 @@ import ReportingPeriodNav from "../../ReportingPeriodNav";
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
 const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
-const tone = (value: number) => (value >= 80 ? "strong" : value >= 60 ? "monitor" : "attention");
+const tone = (value: number) => (value >= 70 ? "strong" : value >= 60 ? "monitor" : "attention");
 const progressTone = (value: number) =>
   value > 100 ? "progress-surpassed" : value >= 100 ? "progress-goal" : value >= 80 ? "progress-close" : "progress-behind";
 const DEFAULT_CALL_MINUTE_GOAL = 3000;
