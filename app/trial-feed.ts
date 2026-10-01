@@ -28,7 +28,11 @@ const parseClasses = (payload = "") =>
   payload.split(";").map((entry) => {
     const [day, time, scheduled, showed, closed] = entry.split("|");
     return { day, time, scheduled: Number(scheduled), showed: Number(showed), closed: Number(closed) };
-  }).filter((row) => dayOrder.includes(row.day) && row.time)
+  }).filter((row) => dayOrder.includes(row.day)
+      && /^\d{1,2}:\d{2}\s+(AM|PM)$/.test(row.time)
+      && Number.isFinite(row.scheduled)
+      && Number.isFinite(row.showed)
+      && Number.isFinite(row.closed))
     .sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day) || timeValue(a.time) - timeValue(b.time));
 
 export function mergeOfficialTrialFeed(base: CenterReport[], rows: string[]) {

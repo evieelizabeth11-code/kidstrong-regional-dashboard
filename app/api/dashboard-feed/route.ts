@@ -7,6 +7,9 @@ const PUBLISHED_FEED_URL =
 
 const REPORT_DATE_COLUMN = 12;
 const ACTIVE_PAYING_COLUMN = 11;
+const TOTAL_MEMBERS_COLUMN = 1;
+const HOLDS_COLUMN = 3;
+const PAST_DUE_COLUMN = 10;
 const LATEST_HEALTH_CENTER_COLUMN = 38;
 const LATEST_HEALTH_APM_COLUMN = 39;
 const LATEST_HEALTH_DATE_COLUMN = 40;
@@ -62,7 +65,7 @@ const mergeNewestCenterRows = (feeds: string[]) => {
       const healthCenter = readCell(values[LATEST_HEALTH_CENTER_COLUMN]);
       const healthApm = readCell(values[LATEST_HEALTH_APM_COLUMN]);
       const healthDate = readCell(values[LATEST_HEALTH_DATE_COLUMN]);
-      if (healthCenter && Number.isFinite(Number(healthApm)) && /^20\d{2}-\d{2}-\d{2}$/.test(healthDate)) {
+      if (healthCenter && healthApm !== "" && Number(healthApm) > 0 && /^20\d{2}-\d{2}-\d{2}$/.test(healthDate)) {
         const currentHealth = latestHealthByCenter.get(healthCenter);
         if (!currentHealth || healthDate >= currentHealth.reportDate) {
           latestHealthByCenter.set(healthCenter, { reportDate: healthDate, apm: healthApm });
@@ -81,7 +84,16 @@ const mergeNewestCenterRows = (feeds: string[]) => {
   const mergedRows = Array.from(newestByCenter.entries()).map(([center, { row }]) => {
     const values = row.split(",");
     const latestHealth = latestHealthByCenter.get(center);
-    if (latestHealth) values[ACTIVE_PAYING_COLUMN] = latestHealth.apm;
+    if (latestHealth) {
+      values[ACTIVE_PAYING_COLUMN] = latestHealth.apm;
+    } else if (!readCell(values[ACTIVE_PAYING_COLUMN])) {
+      const calculatedActivePaying = Number(readCell(values[TOTAL_MEMBERS_COLUMN]))
+        - Number(readCell(values[HOLDS_COLUMN]))
+        - Number(readCell(values[PAST_DUE_COLUMN]));
+      if (Number.isFinite(calculatedActivePaying) && calculatedActivePaying >= 0) {
+        values[ACTIVE_PAYING_COLUMN] = String(calculatedActivePaying);
+      }
+    }
     correctJamieCooperSeptember13(center, values);
     return values.join(",");
   });

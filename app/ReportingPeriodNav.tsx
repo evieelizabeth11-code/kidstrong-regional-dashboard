@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function ReportingPeriodNav() {
-  const [period, setPeriod] = useState("August 2026");
+  const [period, setPeriod] = useState("Loading…");
   useEffect(() => {
     fetch(`/api/live-data?period=${Date.now()}`, { cache: "no-store" }).then((response) => response.text()).then((csv) => {
       const reportDate = csv.trim().split(/\r?\n/)[1]?.split(",")[12]?.replace(/^"|"$/g, "");

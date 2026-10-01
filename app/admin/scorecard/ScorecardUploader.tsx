@@ -213,7 +213,7 @@ export default function ScorecardUploader() {
         {reconciling ? "Reconciling four centers…" : reconciliation ? "Reconcile again ↻" : "Reconcile & refresh dashboard ↻"}
       </button>
       {reconcileMessage && <p className={`admin-message ${reconciliation ? "success" : ""}`} role="status">{reconcileMessage}</p>}
-      {reconciliation && <div className="reconcile-confirmation"><strong>{reconciliation.centersChecked} centers confirmed</strong><span>Report date {reconciliation.reportDate} · Checked {new Date(reconciliation.checkedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span><a href={`/?refresh=${Date.now()}`}>Open refreshed dashboard →</a></div>}
+      {reconciliation && <div className="reconcile-confirmation"><strong>{reconciliation.centersChecked} centers confirmed</strong><span>Report date {reconciliation.reportDate} · Checked {new Date(reconciliation.checkedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span><a href={`/?refresh=${encodeURIComponent(reconciliation.checkedAt)}`}>Open refreshed dashboard →</a></div>}
     </div>
 
     <div className="closeout-card">

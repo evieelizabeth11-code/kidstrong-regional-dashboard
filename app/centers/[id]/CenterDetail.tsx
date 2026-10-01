@@ -431,7 +431,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
             </div>
           </div>
           <section className="scenario-section">
-            <div className="scenario-heading"><div><small>END-OF-MONTH OUTLOOK</small><strong>Projected active-paying members</strong></div><span>Three clear outcomes based on August data</span></div>
+            <div className="scenario-heading"><div><small>END-OF-MONTH OUTLOOK</small><strong>Projected active-paying members</strong></div><span>Three clear outcomes based on {reportingPeriodLabel} data</span></div>
             <div className="membership-scenarios">
               <article className="eom-forecast no-signups"><div className="scenario-label"><i>↓</i><div><small>FLOOR</small><b>NO MORE SIGN-UPS</b></div></div><strong>{noSignupEomActive}</strong><em>PROJECTED APM</em><span>{currentActivePaying} today → scheduled holds and drops applied</span></article>
               <article className="eom-forecast goal-scenario"><div className="scenario-label"><i>★</i><div><small>TARGET</small><b>{goalAchieved ? `REACH ${stretchGoal} SIGN-UPS` : "HIT THE SIGN-UP GOAL"}</b></div></div><strong>{goalAchieved ? stretchEomActive : goalEomActive}</strong><em>PROJECTED APM</em><span>{noSignupEomActive} floor + {targetRemaining} additional sign-up{targetRemaining === 1 ? "" : "s"}</span></article>
@@ -456,7 +456,7 @@ export default function CenterDetail({ centerId, section }: { centerId: string; 
         </section>}
         {section === "membership" && !membership && <section className="empty-state"><strong>Membership data is coming soon.</strong><span>This center will populate when its membership report is added.</span></section>}
 
-        <footer>Sources: Daily Scorecard, Trial Tracker, Membership Health, and Podium <span>August reporting through EOD {footerDataThroughLabel}</span></footer>
+        <footer>Sources: Daily Scorecard, Trial Tracker, Membership Health, and Podium <span>{reportingPeriodLabel} reporting through EOD {footerDataThroughLabel}</span></footer>
       </div>
     </main>
   );
