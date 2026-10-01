@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function ScorecardUploadPage() {
   return <main className="admin-page">
     <header className="navy-header brandless-header admin-header">
-      <div className="header-title"><span>REGIONAL PERFORMANCE COMMAND CENTER</span><strong>DAILY ADMIN</strong></div>
+      <div className="header-title"><span>SOUTHERN NEW JERSEY PERFORMANCE HUB</span><strong>DAILY ADMIN</strong></div>
       <Link href="/">← Return to dashboard</Link>
     </header>
     <div className="page-shell admin-shell">
