@@ -328,7 +328,12 @@ function finalizeMonth_(payload) {
 
   const lastArchiveRow = archive.getLastRow();
   const existing = lastArchiveRow > 1 ? archive.getRange(2, 3, lastArchiveRow - 1, 3).getValues() : [];
-  if (existing.some(function(row) { return row[0] === period && row[1] === 'FINAL'; })) {
+  if (existing.some(function(row) {
+    const archivedPeriod = row[0] instanceof Date
+      ? Utilities.formatDate(row[0], timezone, 'yyyy-MM')
+      : String(row[0] || '').slice(0, 7);
+    return archivedPeriod === period && row[1] === 'FINAL';
+  })) {
     return jsonResponse_({ ok: false, error: period + ' is already finalized. No duplicate archive was created.' });
   }
   const archiveRows = feedRows.map(function(row) {
@@ -338,15 +343,32 @@ function finalizeMonth_(payload) {
   archive.getRange(lastArchiveRow + 1, 1, 4, 2).setNumberFormat('yyyy-mm-dd');
 
   const headers = [['Monthly Call Goal (min)', 'Monthly Signup Goal', 'Trial Schedule Goal', 'Show Rate Target', 'Close Rate Target', 'Close Rate Standard', 'Completed Drop Limit', 'Weekly Signup Pace', 'Projected EOM APM', 'Starting APM', 'Returning Holds', 'New Holds', 'Pending Drops']];
-  goalsSheet.getRange(4, 3, 1, 13).setValues(headers).setFontWeight('bold').setBackground('#0b2a66').setFontColor('#ffffff');
+  // Centers & Goals is a native Sheets table. Multi-column formatting calls
+  // can fail with "make a selection within a single column", so update each
+  // table column independently.
+  headers[0].forEach(function(header, index) {
+    goalsSheet.getRange(4, index + 3)
+      .setValue(header)
+      .setFontWeight('bold')
+      .setBackground('#0b2a66')
+      .setFontColor('#ffffff');
+  });
   const goalRows = expected.map(function(center) {
     const goal = payload.goals.find(function(item) { return item.center === center; });
     if (!goal) throw new Error('Missing new-month plan for ' + center + '.');
     return [goal.callGoal, goal.signupGoal, goal.trialGoal, goal.showTarget / 100, goal.closeTarget / 100, goal.closeStandard / 100, goal.dropLimit, goal.weeklyPace, goal.projectedApm, goal.startingApm, goal.returningHolds, goal.newHolds, goal.pendingDrops];
   });
-  goalsSheet.getRange(5, 3, 4, 13).setValues(goalRows);
-  goalsSheet.getRange(5, 6, 4, 3).setNumberFormat('0%');
-  goalsSheet.autoResizeColumns(3, 13);
+  for (let column = 0; column < 13; column += 1) {
+    goalsSheet.getRange(5, column + 3, 4, 1).setValues(goalRows.map(function(row) {
+      return [row[column]];
+    }));
+  }
+  [6, 7, 8].forEach(function(column) {
+    goalsSheet.getRange(5, column, 4, 1).setNumberFormat('0%');
+  });
+  // Keep closeout transactional. Auto-resizing is cosmetic and can throw a
+  // column-selection exception in the bound Sheet after the archive succeeds,
+  // which makes a completed closeout look like a failure and invites retries.
   SpreadsheetApp.flush();
   return jsonResponse_({ ok: true, period: period, periodLabel: Utilities.formatDate(dataThrough, timezone, 'MMMM yyyy'), nextPeriodLabel: nextPeriod, centersArchived: 4, goalsUpdated: 4 });
 }
