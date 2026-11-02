@@ -10,7 +10,7 @@ import { reports } from "./trial-data";
 import { mergeOfficialTrialFeed } from "./trial-feed";
 
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
-const rate = (top: number, bottom: number) => `${pct(top, bottom).toFixed(1)}%`;
+const rate = (top: number, bottom: number) => bottom ? `${pct(top, bottom).toFixed(1)}%` : "—";
 type StoplightTone = "metric-green" | "metric-amber" | "metric-red" | "metric-pending";
 const thresholdTone = (value: number, greenAt: number, amberAt: number): StoplightTone =>
   value >= greenAt ? "metric-green" : value >= amberAt ? "metric-amber" : "metric-red";
@@ -28,6 +28,7 @@ export default function Home() {
   const [liveCallData, setLiveCallData] = useState(callData);
   const [liveMembershipData, setLiveMembershipData] = useState<CenterMembership[]>(membershipData);
   const [liveReports, setLiveReports] = useState(reports);
+  const [awaitingFirstEod, setAwaitingFirstEod] = useState(false);
 
   useEffect(() => {
     const loadCalls = async () => {
@@ -35,8 +36,14 @@ export default function Home() {
         const response = await fetch(`${DASHBOARD_FEED_URL}?t=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) return;
         const rows = (await response.text()).trim().split(/\r?\n/).slice(1);
-        setLiveCallData(mergeCallFeedRows(callData, rows));
-        setLiveReports(mergeOfficialTrialFeed(reports, rows));
+        const firstValues = rows[0]?.split(",").map((value) => value.replace(/^"|"$/g, "").trim()) ?? [];
+        const reportDate = firstValues[12] ? new Date(`${firstValues[12]}T12:00:00`) : null;
+        const firstDayBeforeEod = reportDate?.getDate() === 1;
+        setAwaitingFirstEod(firstDayBeforeEod);
+        setLiveCallData(firstDayBeforeEod ? callData : mergeCallFeedRows(callData, rows));
+        setLiveReports(firstDayBeforeEod
+          ? reports.map((report) => ({ ...report, scheduled: 0, showed: 0, closed: 0, days: [], classes: [] }))
+          : mergeOfficialTrialFeed(reports, rows));
         const memberships = rows.map((row) => {
           const values = row.split(",").map((value) => value.replace(/^"|"$/g, "").trim());
           return {
@@ -85,9 +92,10 @@ export default function Home() {
     .filter(Boolean)
     .sort()
     .at(-1);
-  const dataThrough = latestReportDate
+  const reportingPeriodDate = latestReportDate
     ? new Date(`${latestReportDate}T12:00:00`)
     : new Date("2026-08-04T12:00:00");
+  const dataThrough = new Date(reportingPeriodDate);
   dataThrough.setDate(dataThrough.getDate() - 1);
   const dataThroughLabel = dataThrough.toLocaleDateString("en-US", {
     month: "long",
@@ -97,8 +105,8 @@ export default function Home() {
   const reportingPeriodLabel = latestReportDate
     ? new Date(`${latestReportDate}T12:00:00`).toLocaleDateString("en-US", { month: "long", year: "numeric" })
     : "August 2026";
-  const daysInMonth = new Date(dataThrough.getFullYear(), dataThrough.getMonth() + 1, 0).getDate();
-  const elapsedDays = Math.max(1, dataThrough.getDate());
+  const daysInMonth = new Date(reportingPeriodDate.getFullYear(), reportingPeriodDate.getMonth() + 1, 0).getDate();
+  const elapsedDays = awaitingFirstEod || dataThrough.getMonth() !== reportingPeriodDate.getMonth() ? 0 : dataThrough.getDate();
 
   return (
     <main className="overview-page">
@@ -122,8 +130,8 @@ export default function Home() {
           <article><small>TRIALS SHOWED</small><div className="regional-value-pair"><strong>{totals.showed}</strong><em>{rate(totals.showed, totals.scheduled)}</em></div><span>regional show rate</span></article>
           <article><small>TRIALS CLOSED</small><div className="regional-value-pair"><strong>{totals.closed}</strong><em>{rate(totals.closed, totals.showed)}</em></div><span>regional close rate</span></article>
           <article><small>SIGN-UPS MTD</small><strong>{totalSignups}</strong><span>regional new memberships</span></article>
-          <article><small>ATTRITION RATE</small><strong>{regionalAttrition.toFixed(1)}%</strong><span>{totalDrops} drops ÷ {totalBomApm.toLocaleString()} BOM APM</span></article>
-          <article><small>CALL TIME</small><div className="regional-value-pair"><strong>{totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><em>{pct(totalMinutes, regionalCallGoal).toFixed(1)}%</em></div><span>of {regionalCallGoal.toLocaleString()} regional minutes</span></article>
+          <article><small>ATTRITION RATE</small><strong>{awaitingFirstEod ? "—" : `${regionalAttrition.toFixed(1)}%`}</strong><span>{awaitingFirstEod ? "Awaiting November 1 EOD" : `${totalDrops} drops ÷ ${totalBomApm.toLocaleString()} BOM APM`}</span></article>
+          <article><small>CALL TIME</small><div className="regional-value-pair"><strong>{totalMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong><em>{awaitingFirstEod ? "—" : `${pct(totalMinutes, regionalCallGoal).toFixed(1)}%`}</em></div><span>{awaitingFirstEod ? "Awaiting November 1 EOD" : `of ${regionalCallGoal.toLocaleString()} regional minutes`}</span></article>
         </section>
 
         <RegionalLeaderboard memberships={liveMembershipData} reports={liveReports} reportingPeriod={reportingPeriodLabel} />
@@ -150,12 +158,12 @@ export default function Home() {
               ?? Math.ceil((calls.totalMinutes + 1) / 500) * 500;
             const expectedSignups = membership ? membership.signups.goal * (elapsedDays / daysInMonth) : 0;
             const signupTone = membership ? paceTone(membership.signups.current, expectedSignups) : "metric-pending";
-            const showTone = thresholdTone(pct(report.showed, report.scheduled), 70, 60);
-            const closeTone = thresholdTone(pct(report.closed, report.showed), 70, 50);
-            const centerAttritionTone = membership ? attritionTone(centerAttrition) : "metric-pending";
+            const showTone = report.scheduled ? thresholdTone(pct(report.showed, report.scheduled), 70, 60) : "metric-pending";
+            const closeTone = report.showed ? thresholdTone(pct(report.closed, report.showed), 70, 50) : "metric-pending";
+            const centerAttritionTone = membership && !awaitingFirstEod ? attritionTone(centerAttrition) : "metric-pending";
             const expectedCallMinutes = callGoal * (elapsedDays / daysInMonth);
             const callTone = paceTone(calls.totalMinutes, expectedCallMinutes);
-            const callPaceLabel = callTone === "metric-green" ? "ON PACE" : callTone === "metric-amber" ? "WATCH" : "OFF PACE";
+            const callPaceLabel = callTone === "metric-green" ? "ON PACE" : callTone === "metric-amber" ? "WATCH" : callTone === "metric-pending" ? "PENDING" : "OFF PACE";
             const paceStatus = signupTone === "metric-green"
               ? { label: "ON TRACK", tone: "on-track" }
               : signupTone === "metric-amber"
@@ -176,7 +184,7 @@ export default function Home() {
                   <div className={`scorecard-metric signup-metric ${signupTone}`}><small>SIGNS MTD</small><strong>{membership?.signups.current ?? "—"}</strong></div>
                   <div className={`scorecard-metric show-metric ${showTone}`}><small>SHOW RATE</small><strong>{rate(report.showed, report.scheduled)}</strong></div>
                   <div className={`scorecard-metric close-metric ${closeTone}`}><small>CLOSE RATE</small><strong>{rate(report.closed, report.showed)}</strong></div>
-                  <div className={`scorecard-metric attrition-metric ${centerAttritionTone}`}><small>ATTRITION</small><strong>{membership ? `${centerAttrition.toFixed(1)}%` : "—"}</strong></div>
+                  <div className={`scorecard-metric attrition-metric ${centerAttritionTone}`}><small>ATTRITION</small><strong>{membership && !awaitingFirstEod ? `${centerAttrition.toFixed(1)}%` : "—"}</strong></div>
                 </div>
                 <div className={`overview-call-goal ${callTone}`}>
                   <div><span>CALL-TIME PACE · {callPaceLabel}</span><strong>{callProgress.toFixed(1)}% of goal</strong></div>
@@ -188,7 +196,7 @@ export default function Home() {
           })}
         </section>
 
-        <footer>Official center trial totals: Daily Scorecard · Coaching detail: Trial Tracker <span>{reportingPeriodLabel} reporting through EOD {dataThroughLabel}</span></footer>
+        <footer>Official center trial totals: Daily Scorecard · Coaching detail: Trial Tracker <span>{awaitingFirstEod ? `${reportingPeriodLabel} tracking begins after November 1 EOD` : `${reportingPeriodLabel} reporting through EOD ${dataThroughLabel}`}</span></footer>
       </div>
     </main>
   );

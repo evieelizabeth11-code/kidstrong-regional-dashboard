@@ -5,6 +5,10 @@ import { membershipData, type CenterMembership } from "./membership-data";
 import { reports as fallbackReports, type CenterReport } from "./trial-data";
 
 const pct = (top: number, bottom: number) => (bottom ? (top / bottom) * 100 : 0);
+const rateRow = (top: number, bottom: number) => ({
+  value: bottom ? pct(top, bottom) : -1,
+  display: bottom ? `${pct(top, bottom).toFixed(1)}%` : "—",
+});
 
 const membershipStrength = (item: CenterMembership) => {
   const calculatedActivePaying = item.totalMembers - item.holds.total - item.pastDue;
@@ -39,14 +43,14 @@ export default function RegionalLeaderboard({
       label: "CLOSE RATE",
       caption: "Closed ÷ showed",
       rows: reports
-        .map((item) => ({ center: item.center, value: pct(item.closed, item.showed), display: `${pct(item.closed, item.showed).toFixed(1)}%` }))
+        .map((item) => ({ center: item.center, ...rateRow(item.closed, item.showed) }))
         .sort((a, b) => b.value - a.value),
     },
     {
       label: "SHOW RATE",
       caption: "Showed ÷ scheduled",
       rows: reports
-        .map((item) => ({ center: item.center, value: pct(item.showed, item.scheduled), display: `${pct(item.showed, item.scheduled).toFixed(1)}%` }))
+        .map((item) => ({ center: item.center, ...rateRow(item.showed, item.scheduled) }))
         .sort((a, b) => b.value - a.value),
     },
   ], [memberships, reports]);
