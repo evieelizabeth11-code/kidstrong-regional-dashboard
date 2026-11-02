@@ -33,6 +33,10 @@ const HISTORY_FALLBACK: HistoryRow[] = [
   { snapshotDate: "2026-08-02", dataThrough: "2026-08-01", period: "2026-08", status: "IN PROGRESS", center: "Mount Laurel", totalMembers: 481, bomApm: 402, activePaying: 402, drops: 23, signups: 1, signupGoal: 36, scheduled: 5, attended: 4, closed: 1, callMinutes: 76.57 },
   { snapshotDate: "2026-08-02", dataThrough: "2026-08-01", period: "2026-08", status: "IN PROGRESS", center: "Turnersville", totalMembers: 500, bomApm: 447, activePaying: 446, drops: 45, signups: 2, signupGoal: 52, scheduled: 4, attended: 1, closed: 1, callMinutes: 38.35 },
   { snapshotDate: "2026-08-02", dataThrough: "2026-08-01", period: "2026-08", status: "IN PROGRESS", center: "Voorhees", totalMembers: 482, bomApm: 404, activePaying: 404, drops: 44, signups: 1, signupGoal: 52, scheduled: 4, attended: 3, closed: 1, callMinutes: 22.87 },
+  { snapshotDate: "2026-11-01", dataThrough: "2026-10-31", period: "2026-10", status: "FINAL", center: "Brick", totalMembers: 570, bomApm: 519, activePaying: 519, drops: 97, signups: 42, signupGoal: 50, scheduled: 134, attended: 86, closed: 38, callMinutes: 1609 },
+  { snapshotDate: "2026-11-01", dataThrough: "2026-10-31", period: "2026-10", status: "FINAL", center: "Mount Laurel", totalMembers: 497, bomApm: 461, activePaying: 461, drops: 44, signups: 49, signupGoal: 55, scheduled: 119, attended: 86, closed: 47, callMinutes: 2532.78 },
+  { snapshotDate: "2026-11-01", dataThrough: "2026-10-31", period: "2026-10", status: "FINAL", center: "Turnersville", totalMembers: 483, bomApm: 450, activePaying: 450, drops: 41, signups: 38, signupGoal: 45, scheduled: 96, attended: 58, closed: 34, callMinutes: 2750.98 },
+  { snapshotDate: "2026-11-01", dataThrough: "2026-10-31", period: "2026-10", status: "FINAL", center: "Voorhees", totalMembers: 478, bomApm: 444, activePaying: 444, drops: 39, signups: 35, signupGoal: 40, scheduled: 93, attended: 59, closed: 33, callMinutes: 1740.8 },
 ];
 const pct = (top: number, bottom: number) => bottom ? (top / bottom) * 100 : 0;
 const RATE_GOAL = 70;
@@ -44,7 +48,7 @@ const periodLabel = (period: string) => {
 
 export default function HistoryDashboard() {
   const [rows, setRows] = useState<HistoryRow[]>(HISTORY_FALLBACK);
-  const [selectedPeriod, setSelectedPeriod] = useState("2026-07");
+  const [selectedPeriod, setSelectedPeriod] = useState("2026-10");
   const [expandedCenter, setExpandedCenter] = useState<string | null>(null);
   const [currentTeamTrials, setCurrentTeamTrials] = useState<TeamTrialPerformance[]>([]);
 
