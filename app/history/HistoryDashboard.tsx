@@ -22,7 +22,7 @@ type HistoryRow = {
   callMinutes: number;
 };
 
-const HISTORY_FEED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000008&single=true&output=csv";
+const HISTORY_FEED_URL = "/api/history-data";
 const DASHBOARD_FEED_URL = "/api/live-data";
 const HISTORY_FALLBACK: HistoryRow[] = [
   { snapshotDate: "2026-08-01", dataThrough: "2026-07-31", period: "2026-07", status: "FINAL", center: "Brick", totalMembers: 608, bomApm: 537, activePaying: 536, drops: 27, signups: 31, signupGoal: 60, scheduled: 161, attended: 98, closed: 33, callMinutes: 3362.73 },
@@ -51,7 +51,7 @@ export default function HistoryDashboard() {
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        const response = await fetch(`${HISTORY_FEED_URL}&t=${Date.now()}`, { cache: "no-store" });
+        const response = await fetch(`${HISTORY_FEED_URL}?t=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) return;
         const records = (await response.text()).trim().split(/\r?\n/).slice(1).map((row) => {
           const values = row.split(",").map((value) => value.replace(/^"|"$/g, "").trim());
