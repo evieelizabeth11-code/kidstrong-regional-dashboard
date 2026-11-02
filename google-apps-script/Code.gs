@@ -299,8 +299,8 @@ function getOrCreateFolder_(name) {
 }
 
 function finalizeMonth_(payload) {
-  if (!payload.reportDate || !Array.isArray(payload.goals) || payload.goals.length !== 4) {
-    return jsonResponse_({ ok: false, error: 'The report date and four center plans are required.' });
+  if (!payload.reportDate || !Array.isArray(payload.finalScorecard) || payload.finalScorecard.length !== 4) {
+    return jsonResponse_({ ok: false, error: 'The report date and four final scorecard rows are required.' });
   }
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const timezone = spreadsheet.getSpreadsheetTimeZone();
@@ -313,8 +313,7 @@ function finalizeMonth_(payload) {
   const nextPeriod = Utilities.formatDate(reportDate, timezone, 'MMMM yyyy');
   const feed = spreadsheet.getSheetByName('Dashboard Feed');
   const archive = spreadsheet.getSheetByName('Historical Archive');
-  const goalsSheet = spreadsheet.getSheetByName('Centers & Goals');
-  if (!feed || !archive || !goalsSheet) return jsonResponse_({ ok: false, error: 'A required dashboard tab is missing.' });
+  if (!feed || !archive) return jsonResponse_({ ok: false, error: 'A required dashboard tab is missing.' });
 
   const feedRows = feed.getRange(2, 1, 4, 38).getValues();
   const expected = ['Brick', 'Mount Laurel', 'Turnersville', 'Voorhees'];
@@ -337,40 +336,15 @@ function finalizeMonth_(payload) {
     return jsonResponse_({ ok: false, error: period + ' is already finalized. No duplicate archive was created.' });
   }
   const archiveRows = feedRows.map(function(row) {
-    return [reportDate, dataThrough, period, 'FINAL', row[0], row[1], row[2], row[11], row[3], row[4], row[5], row[10], row[6], row[7], row[8], row[13], row[14], row[9], row[28], row[29], row[30], row[31], row[32], row[33], row[21], row[15], row[17], row[25], row[23], row[24], row[26], 'Final ' + period + ' snapshot; reconciliation approved and month archived.'];
+    const scorecard = payload.finalScorecard.find(function(item) { return item.center === row[0]; });
+    if (!scorecard) throw new Error('Missing final scorecard row for ' + row[0] + '.');
+    return [reportDate, dataThrough, period, 'FINAL', row[0], row[1], row[2], numberOrZero_(scorecard.activePayingMembers), row[3], row[4], row[5], row[10], numberOrZero_(scorecard.totalDropsMtd), row[7], numberOrZero_(scorecard.salesMtd), numberOrZero_(scorecard.salesFromTrial), numberOrZero_(scorecard.salesNoTrial), row[9], numberOrZero_(scorecard.trialsExpected), numberOrZero_(scorecard.trialsAttended), numberOrZero_(scorecard.salesFromTrial), row[31], row[32], row[33], row[21], row[15], row[17], row[25], row[23], row[24], row[26], 'Final ' + period + ' snapshot; final scorecard approved and month archived.'];
   });
   archive.getRange(lastArchiveRow + 1, 1, 4, 32).setValues(archiveRows);
   archive.getRange(lastArchiveRow + 1, 1, 4, 2).setNumberFormat('yyyy-mm-dd');
 
-  const headers = [['Monthly Call Goal (min)', 'Monthly Signup Goal', 'Trial Schedule Goal', 'Show Rate Target', 'Close Rate Target', 'Close Rate Standard', 'Completed Drop Limit', 'Weekly Signup Pace', 'Projected EOM APM', 'Starting APM', 'Returning Holds', 'New Holds', 'Pending Drops']];
-  // Centers & Goals is a native Sheets table. Multi-column formatting calls
-  // can fail with "make a selection within a single column", so update each
-  // table column independently.
-  headers[0].forEach(function(header, index) {
-    goalsSheet.getRange(4, index + 3)
-      .setValue(header)
-      .setFontWeight('bold')
-      .setBackground('#0b2a66')
-      .setFontColor('#ffffff');
-  });
-  const goalRows = expected.map(function(center) {
-    const goal = payload.goals.find(function(item) { return item.center === center; });
-    if (!goal) throw new Error('Missing new-month plan for ' + center + '.');
-    return [goal.callGoal, goal.signupGoal, goal.trialGoal, goal.showTarget / 100, goal.closeTarget / 100, goal.closeStandard / 100, goal.dropLimit, goal.weeklyPace, goal.projectedApm, goal.startingApm, goal.returningHolds, goal.newHolds, goal.pendingDrops];
-  });
-  for (let column = 0; column < 13; column += 1) {
-    goalsSheet.getRange(5, column + 3, 4, 1).setValues(goalRows.map(function(row) {
-      return [row[column]];
-    }));
-  }
-  [6, 7, 8].forEach(function(column) {
-    goalsSheet.getRange(5, column, 4, 1).setNumberFormat('0%');
-  });
-  // Keep closeout transactional. Auto-resizing is cosmetic and can throw a
-  // column-selection exception in the bound Sheet after the archive succeeds,
-  // which makes a completed closeout look like a failure and invites retries.
   SpreadsheetApp.flush();
-  return jsonResponse_({ ok: true, period: period, periodLabel: Utilities.formatDate(dataThrough, timezone, 'MMMM yyyy'), nextPeriodLabel: nextPeriod, centersArchived: 4, goalsUpdated: 4 });
+  return jsonResponse_({ ok: true, period: period, periodLabel: Utilities.formatDate(dataThrough, timezone, 'MMMM yyyy'), nextPeriodLabel: nextPeriod, centersArchived: 4, goalsPreserved: 4 });
 }
 
 function jsonResponse_(payload) {

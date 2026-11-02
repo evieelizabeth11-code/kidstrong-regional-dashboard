@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 
 const PUBLISHED_FEED_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
+const PUBLISHED_SCORECARD_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000007&single=true&output=csv";
 const EXPECTED_CENTERS = ["Brick", "Mount Laurel", "Turnersville", "Voorhees"];
 
 function safeEqual(left: string, right: string) {
@@ -39,20 +41,53 @@ async function currentFeed() {
   return { reportDate: dates[0], rows: present };
 }
 
-function closeoutSummary(reportDate: string, rows: string[][]) {
+function dateKey(value: string) {
+  const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (match) return `${match[3]}-${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}`;
+  return value.trim().slice(0, 10);
+}
+
+async function finalScorecard(reportDate: string) {
+  const upstream = await fetch(`${PUBLISHED_SCORECARD_URL}&closeout=${Date.now()}`, { cache: "no-store" });
+  if (!upstream.ok) throw new Error("The published Daily Scorecard is unavailable.");
+  const rows = (await upstream.text()).trim().split(/\r?\n/).map(parseCsvLine);
+  return EXPECTED_CENTERS.map((center) => {
+    const row = rows.find((candidate) => dateKey(candidate[0] || "") === reportDate && candidate[1] === center);
+    if (!row) throw new Error(`The final scorecard is missing ${center} for ${reportDate}.`);
+    return {
+      center,
+      activePayingMembers: Number(row[2]),
+      salesMtd: Number(row[7]),
+      totalDropsMtd: Number(row[8]),
+      trialsExpected: Number(row[13]),
+      trialsAttended: Number(row[15]),
+      salesFromTrial: Number(row[16]),
+      salesNoTrial: Number(row[17]),
+    };
+  });
+}
+
+function closeoutSummary(reportDate: string, rows: string[][], scorecard: Awaited<ReturnType<typeof finalScorecard>>) {
   const date = new Date(`${reportDate}T12:00:00`);
   const dataThrough = new Date(date); dataThrough.setDate(dataThrough.getDate() - 1);
   const period = `${dataThrough.getFullYear()}-${String(dataThrough.getMonth() + 1).padStart(2, "0")}`;
   const canFinalize = date.getDate() === 1;
+  const nextPeriodLabel = date.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "America/New_York" });
   return {
     reportDate,
     dataThrough: dataThrough.toISOString().slice(0, 10),
     period,
+    nextPeriodLabel,
     canFinalize,
-    centers: rows.map((row) => ({
-      center: row[0], apm: Number(row[11]), signups: Number(row[8]), scheduled: Number(row[28]),
-      attended: Number(row[29]), closed: Number(row[30]), callMinutes: Number(row[21]), drops: Number(row[6]),
-    })),
+    centers: rows.map((row) => {
+      const final = scorecard.find((item) => item.center === row[0])!;
+      return {
+        center: row[0], apm: final.activePayingMembers, signups: final.salesMtd,
+        scheduled: final.trialsExpected, attended: final.trialsAttended, closed: final.salesFromTrial,
+        callMinutes: Number(row[21]), drops: final.totalDropsMtd,
+      };
+    }),
+    finalScorecard: scorecard,
   };
 }
 
@@ -66,7 +101,8 @@ export async function POST(request: Request) {
 
   try {
     const feed = await currentFeed();
-    const summary = closeoutSummary(feed.reportDate, feed.rows);
+    const scorecard = await finalScorecard(feed.reportDate);
+    const summary = closeoutSummary(feed.reportDate, feed.rows, scorecard);
     const action = String(form.get("action") ?? "preview");
     if (action === "preview") return Response.json({ ok: true, ...summary });
     if (action !== "finalize") return Response.json({ ok: false, error: "Unknown closeout action." }, { status: 400 });
@@ -77,11 +113,10 @@ export async function POST(request: Request) {
     const webhookUrl = process.env.SCORECARD_WEBHOOK_URL ?? "";
     const secret = process.env.SCORECARD_WEBHOOK_SECRET ?? "";
     if (!webhookUrl || !secret) throw new Error("The private Google connection is not configured.");
-    const goals = JSON.parse(String(form.get("goals") ?? "[]"));
     const response = await fetch(webhookUrl, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "month-closeout", secret, reportDate: summary.reportDate, goals }),
+      body: JSON.stringify({ action: "month-closeout", secret, reportDate: summary.reportDate, finalScorecard: summary.finalScorecard }),
       redirect: "follow",
     });
     const result = await response.json();

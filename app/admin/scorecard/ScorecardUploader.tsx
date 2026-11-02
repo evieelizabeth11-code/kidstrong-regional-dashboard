@@ -40,16 +40,9 @@ type Reconciliation = {
 };
 
 type CloseoutPreview = {
-  reportDate: string; dataThrough: string; period: string; canFinalize: boolean;
+  reportDate: string; dataThrough: string; period: string; nextPeriodLabel: string; canFinalize: boolean;
   centers: { center: string; apm: number; signups: number; scheduled: number; attended: number; closed: number; callMinutes: number; drops: number }[];
 };
-
-const octoberGoals = [
-  { center: "Brick", callGoal: 2800, signupGoal: 55, trialGoal: 154, showTarget: 65, closeTarget: 55, closeStandard: 70, dropLimit: 35, weeklyPace: 13, projectedApm: 573, startingApm: 584, returningHolds: 10, newHolds: 3, pendingDrops: 73 },
-  { center: "Mount Laurel", callGoal: 3100, signupGoal: 60, trialGoal: 147, showTarget: 65, closeTarget: 63, closeStandard: 70, dropLimit: 26, weeklyPace: 14, projectedApm: 474, startingApm: 445, returningHolds: 19, newHolds: 3, pendingDrops: 47 },
-  { center: "Turnersville", callGoal: 2600, signupGoal: 58, trialGoal: 111, showTarget: 70, closeTarget: 75, closeStandard: 70, dropLimit: 27, weeklyPace: 14, projectedApm: 486, startingApm: 459, returningHolds: 6, newHolds: 0, pendingDrops: 37 },
-  { center: "Voorhees", callGoal: 2700, signupGoal: 62, trialGoal: 148, showTarget: 70, closeTarget: 60, closeStandard: 70, dropLimit: 26, weeklyPace: 14, projectedApm: 472, startingApm: 436, returningHolds: 14, newHolds: 4, pendingDrops: 36 },
-];
 
 const today = () => {
   const date = new Date();
@@ -141,7 +134,7 @@ export default function ScorecardUploader() {
     if (!password) return setCloseoutMessage("Enter the admin password above first.");
     setCloseoutBusy(true); setCloseoutMessage("");
     const form = new FormData();
-    form.set("password", password); form.set("action", action); form.set("goals", JSON.stringify(octoberGoals));
+    form.set("password", password); form.set("action", action);
     try {
       const response = await fetch("/api/month-closeout", { method: "POST", body: form, cache: "no-store" });
       const result = await response.json();
@@ -217,13 +210,13 @@ export default function ScorecardUploader() {
     </div>
 
     <div className="closeout-card">
-      <div className="reconcile-heading"><div><small>MONTH-END CONTROL</small><h2>Preview. Finalize. Open the new month.</h2><p>This freezes the completed month in history, loads the approved October goals, and leaves every source row intact.</p></div><span>{closeoutComplete ? "COMPLETE ✓" : "PIN PROTECTED"}</span></div>
+      <div className="reconcile-heading"><div><small>MONTH-END CONTROL</small><h2>Preview. Finalize. Open the new month.</h2><p>This freezes the completed month in history, preserves the approved new-month plan, and leaves every source row intact.</p></div><span>{closeoutComplete ? "COMPLETE ✓" : "PIN PROTECTED"}</span></div>
       {!closeout && <button className="primary-admin-button closeout-preview-button" disabled={closeoutBusy} onClick={() => runCloseout("preview")}>{closeoutBusy ? "Checking month-end data…" : "Preview month closeout →"}</button>}
       {closeout && <>
-        <div className="closeout-summary-head"><div><small>ARCHIVE PERIOD</small><strong>{closeout.period}</strong></div><div><small>DATA THROUGH</small><strong>{closeout.dataThrough}</strong></div><div><small>NEXT PLAN</small><strong>October 2026</strong></div></div>
+        <div className="closeout-summary-head"><div><small>ARCHIVE PERIOD</small><strong>{closeout.period}</strong></div><div><small>DATA THROUGH</small><strong>{closeout.dataThrough}</strong></div><div><small>NEXT PLAN</small><strong>{closeout.nextPeriodLabel}</strong></div></div>
         <div className="closeout-center-grid">{closeout.centers.map((center) => <article key={center.center}><strong>{center.center}</strong><span>APM <b>{center.apm}</b></span><span>Sign-ups <b>{center.signups}</b></span><span>Trials <b>{center.scheduled} / {center.attended} / {center.closed}</b></span><span>Calls <b>{center.callMinutes.toLocaleString(undefined, { maximumFractionDigits: 0 })} min</b></span></article>)}</div>
-        <div className="closeout-goals"><small>OCTOBER PLAN READY</small>{octoberGoals.map((goal) => <span key={goal.center}><b>{goal.center}</b> {goal.signupGoal} signs · {goal.trialGoal} trials · {goal.showTarget}% show · {goal.closeTarget}% close · {goal.callGoal.toLocaleString()} call min</span>)}</div>
-        <button className="primary-admin-button closeout-finalize-button" disabled={closeoutBusy || !closeout.canFinalize || closeoutComplete} onClick={() => runCloseout("finalize")}>{closeoutComplete ? "Month finalized ✓" : closeout.canFinalize ? "Finalize month & open October →" : "Final closeout unlocks October 1"}</button>
+        <div className="closeout-goals"><small>{closeout.nextPeriodLabel.toUpperCase()} PLAN PRESERVED</small><span>Your approved goals and Membership Health setup will remain unchanged.</span></div>
+        <button className="primary-admin-button closeout-finalize-button" disabled={closeoutBusy || !closeout.canFinalize || closeoutComplete} onClick={() => runCloseout("finalize")}>{closeoutComplete ? "Month finalized ✓" : closeout.canFinalize ? `Finalize month & open ${closeout.nextPeriodLabel.split(" ")[0]} →` : "Final closeout unlocks on the first report date"}</button>
       </>}
       {closeoutMessage && <p className={`admin-message ${closeoutComplete ? "success" : ""}`} role="status">{closeoutMessage}</p>}
     </div>
