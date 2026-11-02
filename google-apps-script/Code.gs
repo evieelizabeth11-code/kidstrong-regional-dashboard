@@ -116,6 +116,7 @@ function doPost(event) {
 
     if (payload.action === 'parse') return parseScorecardPdf_(payload);
     if (payload.action === 'approve') return approveScorecardRows_(payload);
+    if (payload.action === 'month-closeout-preview') return previewMonthCloseout_(payload);
     if (payload.action === 'month-closeout') return finalizeMonth_(payload);
     return jsonResponse_({ ok: false, error: 'Unknown scorecard action.' });
   } catch (error) {
@@ -298,9 +299,41 @@ function getOrCreateFolder_(name) {
   return folders.hasNext() ? folders.next() : DriveApp.createFolder(name);
 }
 
+function finalScorecardRows_(spreadsheet, reportDate, timezone) {
+  const scorecardSheet = spreadsheet.getSheetByName('Daily Scorecard Import');
+  if (!scorecardSheet) throw new Error('The Daily Scorecard Import tab is missing.');
+  const lastRow = scorecardSheet.getLastRow();
+  const rows = lastRow >= 5 ? scorecardSheet.getRange(5, 1, lastRow - 4, 18).getValues() : [];
+  const expected = ['Brick', 'Mount Laurel', 'Turnersville', 'Voorhees'];
+  return expected.map(function(center) {
+    const matches = rows.filter(function(row) {
+      return row[0] instanceof Date && Utilities.formatDate(row[0], timezone, 'yyyy-MM-dd') === reportDate && row[1] === center;
+    });
+    if (!matches.length) throw new Error('The final scorecard is missing ' + center + ' for ' + reportDate + '.');
+    const row = matches[matches.length - 1];
+    return {
+      center: center,
+      activePayingMembers: numberOrZero_(row[2]),
+      salesMtd: numberOrZero_(row[7]),
+      totalDropsMtd: numberOrZero_(row[8]),
+      trialsExpected: numberOrZero_(row[13]),
+      trialsAttended: numberOrZero_(row[15]),
+      salesFromTrial: numberOrZero_(row[16]),
+      salesNoTrial: numberOrZero_(row[17])
+    };
+  });
+}
+
+function previewMonthCloseout_(payload) {
+  if (!payload.reportDate) return jsonResponse_({ ok: false, error: 'The report date is required.' });
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const timezone = spreadsheet.getSpreadsheetTimeZone();
+  return jsonResponse_({ ok: true, finalScorecard: finalScorecardRows_(spreadsheet, payload.reportDate, timezone) });
+}
+
 function finalizeMonth_(payload) {
-  if (!payload.reportDate || !Array.isArray(payload.finalScorecard) || payload.finalScorecard.length !== 4) {
-    return jsonResponse_({ ok: false, error: 'The report date and four final scorecard rows are required.' });
+  if (!payload.reportDate) {
+    return jsonResponse_({ ok: false, error: 'The report date is required.' });
   }
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const timezone = spreadsheet.getSpreadsheetTimeZone();
@@ -324,6 +357,7 @@ function finalizeMonth_(payload) {
   if (feedRows.some(function(row) {
     return !(row[12] instanceof Date) || Utilities.formatDate(row[12], timezone, 'yyyy-MM-dd') !== reportKey;
   })) return jsonResponse_({ ok: false, error: 'The four centers do not share the approved report date.' });
+  const finalScorecard = finalScorecardRows_(spreadsheet, reportKey, timezone);
 
   const lastArchiveRow = archive.getLastRow();
   const existing = lastArchiveRow > 1 ? archive.getRange(2, 3, lastArchiveRow - 1, 3).getValues() : [];
@@ -336,7 +370,7 @@ function finalizeMonth_(payload) {
     return jsonResponse_({ ok: false, error: period + ' is already finalized. No duplicate archive was created.' });
   }
   const archiveRows = feedRows.map(function(row) {
-    const scorecard = payload.finalScorecard.find(function(item) { return item.center === row[0]; });
+    const scorecard = finalScorecard.find(function(item) { return item.center === row[0]; });
     if (!scorecard) throw new Error('Missing final scorecard row for ' + row[0] + '.');
     return [reportDate, dataThrough, period, 'FINAL', row[0], row[1], row[2], numberOrZero_(scorecard.activePayingMembers), row[3], row[4], row[5], row[10], numberOrZero_(scorecard.totalDropsMtd), row[7], numberOrZero_(scorecard.salesMtd), numberOrZero_(scorecard.salesFromTrial), numberOrZero_(scorecard.salesNoTrial), row[9], numberOrZero_(scorecard.trialsExpected), numberOrZero_(scorecard.trialsAttended), numberOrZero_(scorecard.salesFromTrial), row[31], row[32], row[33], row[21], row[15], row[17], row[25], row[23], row[24], row[26], 'Final ' + period + ' snapshot; final scorecard approved and month archived.'];
   });

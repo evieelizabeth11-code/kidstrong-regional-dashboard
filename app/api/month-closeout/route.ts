@@ -3,8 +3,6 @@ export const dynamic = "force-dynamic";
 
 const PUBLISHED_FEED_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000006&single=true&output=csv";
-const PUBLISHED_SCORECARD_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vStYm8FUld375ztzjfoQxGkA6o9h7YW4GAYM_xSLPB4Q78WQn-MoDr1RHbh7e3dPt1VrtBa-p3ptZi2/pub?gid=300000007&single=true&output=csv";
 const EXPECTED_CENTERS = ["Brick", "Mount Laurel", "Turnersville", "Voorhees"];
 
 function safeEqual(left: string, right: string) {
@@ -41,33 +39,26 @@ async function currentFeed() {
   return { reportDate: dates[0], rows: present };
 }
 
-function dateKey(value: string) {
-  const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (match) return `${match[3]}-${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}`;
-  return value.trim().slice(0, 10);
-}
+type FinalScorecard = {
+  center: string; activePayingMembers: number; salesMtd: number; totalDropsMtd: number;
+  trialsExpected: number; trialsAttended: number; salesFromTrial: number; salesNoTrial: number;
+}[];
 
-async function finalScorecard(reportDate: string) {
-  const upstream = await fetch(`${PUBLISHED_SCORECARD_URL}&closeout=${Date.now()}`, { cache: "no-store" });
-  if (!upstream.ok) throw new Error("The published Daily Scorecard is unavailable.");
-  const rows = (await upstream.text()).trim().split(/\r?\n/).map(parseCsvLine);
-  return EXPECTED_CENTERS.map((center) => {
-    const row = rows.find((candidate) => dateKey(candidate[0] || "") === reportDate && candidate[1] === center);
-    if (!row) throw new Error(`The final scorecard is missing ${center} for ${reportDate}.`);
-    return {
-      center,
-      activePayingMembers: Number(row[2]),
-      salesMtd: Number(row[7]),
-      totalDropsMtd: Number(row[8]),
-      trialsExpected: Number(row[13]),
-      trialsAttended: Number(row[15]),
-      salesFromTrial: Number(row[16]),
-      salesNoTrial: Number(row[17]),
-    };
+async function privateScorecard(reportDate: string, webhookUrl: string, secret: string): Promise<FinalScorecard> {
+  const response = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "month-closeout-preview", secret, reportDate }),
+    redirect: "follow",
   });
+  const result = await response.json();
+  if (!response.ok || !result.ok || !Array.isArray(result.finalScorecard)) {
+    throw new Error(result.error || "The private Daily Scorecard connection is unavailable.");
+  }
+  return result.finalScorecard;
 }
 
-function closeoutSummary(reportDate: string, rows: string[][], scorecard: Awaited<ReturnType<typeof finalScorecard>>) {
+function closeoutSummary(reportDate: string, rows: string[][], scorecard: FinalScorecard) {
   const date = new Date(`${reportDate}T12:00:00`);
   const dataThrough = new Date(date); dataThrough.setDate(dataThrough.getDate() - 1);
   const period = `${dataThrough.getFullYear()}-${String(dataThrough.getMonth() + 1).padStart(2, "0")}`;
@@ -101,7 +92,10 @@ export async function POST(request: Request) {
 
   try {
     const feed = await currentFeed();
-    const scorecard = await finalScorecard(feed.reportDate);
+    const webhookUrl = process.env.SCORECARD_WEBHOOK_URL ?? "";
+    const secret = process.env.SCORECARD_WEBHOOK_SECRET ?? "";
+    if (!webhookUrl || !secret) throw new Error("The private Google connection is not configured.");
+    const scorecard = await privateScorecard(feed.reportDate, webhookUrl, secret);
     const summary = closeoutSummary(feed.reportDate, feed.rows, scorecard);
     const action = String(form.get("action") ?? "preview");
     if (action === "preview") return Response.json({ ok: true, ...summary });
@@ -110,13 +104,10 @@ export async function POST(request: Request) {
       return Response.json({ ok: false, error: `Final closeout unlocks on the first report date of the new month. Current report date: ${summary.reportDate}.` }, { status: 422 });
     }
 
-    const webhookUrl = process.env.SCORECARD_WEBHOOK_URL ?? "";
-    const secret = process.env.SCORECARD_WEBHOOK_SECRET ?? "";
-    if (!webhookUrl || !secret) throw new Error("The private Google connection is not configured.");
     const response = await fetch(webhookUrl, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "month-closeout", secret, reportDate: summary.reportDate, finalScorecard: summary.finalScorecard }),
+      body: JSON.stringify({ action: "month-closeout", secret, reportDate: summary.reportDate }),
       redirect: "follow",
     });
     const result = await response.json();
